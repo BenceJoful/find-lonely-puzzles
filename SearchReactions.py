@@ -33,7 +33,7 @@ async def on_message(message):
         replymsg = "other"
 
     if search_channel_id > 0:
-        replymsg = "Unsolved "+replymsg+"puzzles in past week:"
+        replymsg = "Unsolved "+replymsg+" puzzles in the past week:"
         foundPuzzles = 0
 
         from_date = datetime.datetime.now() - datetime.timedelta(days= days_to_search )
@@ -45,8 +45,8 @@ async def on_message(message):
             if reactioncnt <= reaction_threshhold:
                 #post first line of text (up to 50 characters) then the message ID.
                 replymsg += "\n    " + msg.content.splitlines()[0][:50] + " (https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ")"
-            
-            foundPuzzles += 1
+                foundPuzzles += 1
+
             if foundPuzzles == max_puzzles_return:
                 break
 
@@ -60,8 +60,4 @@ async def on_message(message):
     if client.user in message.mentions:
         await message.channel.send(content="Try "+sudoku_keyword +" or "+others_keyword, reference=message)
 
-
-
 client.run(access_token)
-
-
