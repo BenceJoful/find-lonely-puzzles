@@ -51,7 +51,8 @@ async def on_message(message):
         await msg.delete()
         #await message.channel
 
+access_token= os.environ["ACCESS_TOKEN"]
 
-client.run('ODk2MTgxMzcyOTc5MzkyNTMy.YWDX8Q.rfCdygCxXLV3KvfJK76UafcosBo')
+client.run(access_token)
 
 
