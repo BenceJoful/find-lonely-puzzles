@@ -50,10 +50,17 @@ async def on_message(message):
             if foundPuzzles == max_puzzles_return:
                 break
 
-        if foundPuzzles > 0:
-            await message.channel.send(replymsg)
-        else:
-            await message.channel.send("No unsolved puzzles in past week.")
+        if foundPuzzles == 0:
+            replymsg = "No unsolved puzzles in past week."
+
+        await message.channel.send(content=replymsg, reference=message)
+        return
+
+    #on mention, 
+    if client.user in message.mentions:
+        await message.channel.send(content="Try "+sudoku_keyword +" or "+others_keyword, reference=message)
+
+
 
 client.run(access_token)
 
