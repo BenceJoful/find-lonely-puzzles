@@ -1,3 +1,4 @@
+import os
 import discord
 #import pandas as pd
 
