@@ -44,7 +44,7 @@ async def on_message(message):
 
             if reactioncnt <= reaction_threshhold:
                 #post first line of text (up to 50 characters) then the message ID.
-                replymsg += "\n    " + msg.content.splitlines()[0][:50] + " (https://discord.com/channels/"+guild_id+"/"+msg.channel.id+"/" + str(msg.id) + ")"
+                replymsg += "\n    " + msg.content.splitlines()[0][:50] + " (https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ")"
             
             foundPuzzles += 1
             if foundPuzzles == max_puzzles_return:
