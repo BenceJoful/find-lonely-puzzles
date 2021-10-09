@@ -5,13 +5,13 @@ import discord
 client = discord.Client()
 access_token= os.environ["ACCESS_TOKEN"]
 guild_id = os.environ["GUILD_ID"]
-sudoku_submissions_channel_id = os.environ["SUDOKU_SUBMISSIONS_CHANNEL_ID"]
-other_submissions_channel_id = os.environ["OTHER_SUBMISSIONS_CHANNEL_ID"]
+sudoku_submissions_channel_id = int(os.environ["SUDOKU_SUBMISSIONS_CHANNEL_ID"])
+other_submissions_channel_id = int(os.environ["OTHER_SUBMISSIONS_CHANNEL_ID"])
 sudoku_keyword = os.environ["SEARCH_SUDOKU_KEYWORD"]
 others_keyword = os.environ["SEARCH_OTHERS_KEYWORD"]
-max_puzzles_return = os.environ["MAX_PUZZLES_RETURN"]
-reaction_threshhold = os.environ["REACTION_THRESHHOLD"]
-days_to_search = os.environ["DAYS_TO_SEARCH"]
+max_puzzles_return = int(os.environ["MAX_PUZZLES_RETURN"])
+reaction_threshhold = int(os.environ["REACTION_THRESHHOLD"])
+days_to_search = int(os.environ["DAYS_TO_SEARCH"])
 
 @client.event
 async def on_ready():
@@ -54,8 +54,6 @@ async def on_message(message):
             await message.channel.send(replymsg)
         else:
             await message.channel.send("No unsolved puzzles in past week.")
-
-
 
 client.run(access_token)
 
