@@ -1,10 +1,17 @@
 import os
+import datetime
 import discord
-#import pandas as pd
 
 client = discord.Client()
-guild = discord.Guild
-
+access_token= os.environ["ACCESS_TOKEN"]
+guild_id = os.environ["GUILD_ID"]
+sudoku_submissions_channel_id = os.environ["SUDOKU_SUBMISSIONS_CHANNEL_ID"]
+other_submissions_channel_id = os.environ["OTHER_SUBMISSIONS_CHANNEL_ID"]
+sudoku_keyword = os.environ["SEARCH_SUDOKU_KEYWORD"]
+others_keyword = os.environ["SEARCH_OTHERS_KEYWORD"]
+max_puzzles_return = os.environ["MAX_PUZZLES_RETURN"]
+reaction_threshhold = os.environ["REACTION_THRESHHOLD"]
+days_to_search = os.environ["DAYS_TO_SEARCH"]
 
 @client.event
 async def on_ready():
@@ -15,44 +22,40 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message.content.startswith('/list-unsolved-sudoku-submissions'):
-        #comment="""
-        #data = pd.DataFrame(columns=['content', 'time', 'author'])
-        
-        replymsg = "Unsolved puzzles since "
+    search_channel_id = 0
+    replymsg = ""
+    if sudoku_keyword in message.content:
+        search_channel_id = sudoku_submissions_channel_id
+        replymsg = "sudoku"
+
+    if others_keyword in message.content:
+        search_channel_id = other_submissions_channel_id
+        replymsg = "other"
+
+    if search_channel_id > 0:
+        replymsg = "Unsolved "+replymsg+"puzzles in past week:"
         foundPuzzles = 0
 
-        async for msg in client.get_channel(896187693728419850).history(limit=100):
+        from_date = datetime.datetime.now() - datetime.timedelta(days= days_to_search )
+        async for msg in client.get_channel(search_channel_id).history(after=from_date):
             reactioncnt = 0
             for reaction in msg.reactions:
                 reactioncnt+=reaction.count
 
-            #print (reactioncnt)
-
-            if reactioncnt == 2:
-                #todo: post first line of text (up to 50 characters) then the message ID.
-                replymsg += "\n" + msg.content.splitlines()[0][:50] + " (https://discord.com/channels/896180948108976228/896187693728419850/" + str(msg.id) + ")"
+            if reactioncnt <= reaction_threshhold:
+                #post first line of text (up to 50 characters) then the message ID.
+                replymsg += "\n    " + msg.content.splitlines()[0][:50] + " (https://discord.com/channels/"+guild_id+"/"+msg.channel_id+"/" + str(msg.id) + ")"
             
             foundPuzzles += 1
-            if foundPuzzles == 10:
+            if foundPuzzles == max_puzzles_return:
                 break
 
-#            data = data.append({'content': msg.content,
-                                #'time': msg.created_at,
-                                #'reactions': msg.reactions.count}, ignore_index=True)
-            
-        #file_location = "data.csv" # Set the string to where you want the file to be saved to
-        #data.to_csv(file_location)
-        #"""
         if foundPuzzles > 0:
-            await client.get_channel(896186189533560883).send(replymsg)
+            await message.channel.send(replymsg)
         else:
-            await client.get_channel(896186189533560883).send("No unsolved puzzles found in the most recent 100 submissions")
-        
-        await msg.delete()
-        #await message.channel
+            await message.channel.send("No unsolved puzzles in past week.")
 
-access_token= os.environ["ACCESS_TOKEN"]
+
 
 client.run(access_token)
 
