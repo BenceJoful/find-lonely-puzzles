@@ -1,3 +1,8 @@
+'''
+todo:
+    search archives and introduce more choices based on reactions (ratings, tags)
+'''
+
 import os
 import datetime
 import configparser
@@ -67,11 +72,7 @@ slash = SlashCommand(bot, sync_commands=True)
                 manage_commands.create_choice(
                     name="Month",
                     value=30
-                ),
-                manage_commands.create_choice(
-                    name="Year",
-                    value=365
-                ),
+                )
             ]
         ),
         manage_commands.create_option(
@@ -95,9 +96,6 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, max_age: int = day
         search_channel_id = other_submissions_channel_id
 
     if search_channel_id > 0:
-        replytitle = puzzle_type+" puzzles in the past "+str(max_age)+" days"+ \
-            (" with ≤ "+str(reaction_count)+" reactions" if reaction_count != 0 else "") + \
-            ":"
         replymsg = ''
         foundPuzzles = 0
 
@@ -109,7 +107,8 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, max_age: int = day
 
             if reactioncnt <= reaction_threshhold + reaction_count:
                 #post first line of text (up to 50 characters) then the message ID.
-                msg_data = "\n• [" + msg.content.splitlines()[0][:50] + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ")"
+                firstLine = msg.content.splitlines()[0].replace("~~","").replace("*","").replace("_","")
+                msg_data = "\n• [" + firstLine[:50] + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name
                 if (len(replymsg+msg_data)<4096):
                     replymsg += msg_data    
                     foundPuzzles += 1
@@ -122,6 +121,11 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, max_age: int = day
         if foundPuzzles == 0:
             replymsg = "No puzzles found matching the criteria."
 
+        
+        replytitle = ("Untested " if reaction_count == 0 else str(foundPuzzles))+ \
+            puzzle_type+" puzzles in the past "+str(max_age)+" days"+ \
+            (" with ≤ "+str(reaction_count)+" reactions" if reaction_count != 0 else "") + \
+            ":"
         embed = discord.Embed(title=replytitle)
         embed.description=replymsg
 
