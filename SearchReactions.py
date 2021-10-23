@@ -100,7 +100,7 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, max_age: int = day
         foundPuzzles = 0
 
         from_date = datetime.datetime.now() - datetime.timedelta(days= max_age)
-        async for msg in bot.get_channel(search_channel_id).history(after=from_date):
+        async for msg in bot.get_channel(search_channel_id).history(after=from_date,limit=None):
             reactioncnt = 0
             for reaction in msg.reactions:
                 reactioncnt+=reaction.count
