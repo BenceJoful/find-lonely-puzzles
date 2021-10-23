@@ -122,7 +122,7 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, max_age: int = day
             replymsg = "No puzzles found matching the criteria."
 
         
-        replytitle = ("Untested " if reaction_count == 0 else str(foundPuzzles)+' ')+ \
+        replytitle = str(foundPuzzles)+' '+("Untested " if reaction_count == 0 else '')+ \
             puzzle_type+" puzzles in the past "+str(max_age)+" days"+ \
             (" with ≤ "+str(reaction_count)+" reactions" if reaction_count != 0 else "") + \
             ":"
