@@ -137,7 +137,6 @@ async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
             brokencnt = 0
             for reaction in msg.reactions:
                 if (reaction.custom_emoji):
-                    print(reaction.emoji.name)
                     if (reaction.emoji.name == solved_emoji_name):
                         solvedcnt += reaction.count
                     elif (reaction.emoji.name == broken_emoji_name):
