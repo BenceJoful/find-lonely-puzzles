@@ -3,6 +3,7 @@ todo:
     search archives and introduce more choices based on reactions (ratings, tags)
     maybe? make username @ (only if able to not mention).  Allowed_mentiond = None
     download all data to allow making top 10 lists based on reactions.
+    parse text on messages addressing the bot. So yag can call
 '''
 
 import os
@@ -39,10 +40,8 @@ except:
     solved_emoji_name = config['db']['SOLVED_EMOJI_NAME']
     broken_emoji_name = config['db']['BROKEN_EMOJI_NAME']
 
-    
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 slash = SlashCommand(bot, sync_commands=True)
-
 
 @slash.slash(
     name="lonelypuzzles", description="Search for puzzles which need testing", 
@@ -98,20 +97,51 @@ slash = SlashCommand(bot, sync_commands=True)
     ]
 )
 async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
-    await ctx.defer()
-    response = await findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
-    await ctx.send(embed = response[0], hidden = response[1])
-
-@bot.command()
-async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
-    response = await findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
-    if (not response[1]):  #can't do hidden, apparently, so just silently fail in other channels
-        await ctx.send(embed = response[0])
-
-async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count):
     if (ctx.channel.id != bot_commands_channel_id):
-        return (discord.Embed(description="I'd love to look for those kinds of puzzles for you, but I can only respond to messages in [#bot-commands](https://discord.com/channels/"+guild_id+"/"+str(bot_commands_channel_id)+"/).  Let's talk over there!"),True)
+        await ctx.send(discord.Embed(description="I'd love to look for those kinds of puzzles for you, but I can only respond to messages in [#bot-commands](https://discord.com/channels/"+guild_id+"/"+str(bot_commands_channel_id)+"/).  Let's talk over there!"),hidden=True)
+    else:
+        await ctx.defer()
+        response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
+        await ctx.send(embed = response)
 
+'''@bot.command()
+async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
+    if (ctx.channel.id == bot_commands_channel_id):
+        response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
+        await ctx.send(embed = response)'''
+
+@bot.listen()
+async def on_message(message):
+    helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku' or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
+    #if it mentions me, process like a command.  Don't support search to start.  Or put the search terms last.
+    if (message.channel.id == bot_commands_channel_id and bot.user in message.mentions):
+        args = message.content.split()
+        if len(args) > 4:
+            if args[1] == 'lonelypuzzles':
+                puzzle_type = args[2]
+                max_age = 0
+                try:
+                    max_age = int(args[3])
+                except ValueError:
+                    await message.channel.send(embed = discord.Embed(description='max_age is not an integer.\n'+helpmsg))
+                    return
+
+                solved_count = 0
+                try:
+                    solved_count = int(args[4])
+                except ValueError:
+                    await message.channel.send(embed = discord.Embed(description='solved_count is not an integer.\n'+helpmsg))
+                    return
+
+                search_terms = " ".join(args[5:])
+                response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
+                await message.channel.send(embed = response)
+            else:
+                await message.channel.send(embed = discord.Embed(description='No command given.\n'+helpmsg))
+        else:
+            await message.channel.send(embed = discord.Embed(description='Insufficient arguments given.\n'+helpmsg))
+
+async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
     search_channel_id = 0
     if puzzle_type == 'sudoku':
         search_channel_id = sudoku_submissions_channel_id
@@ -149,7 +179,8 @@ async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
                 if hasAllTerms:
                     #post first line of text (up to 50 characters) then the message ID.
                     firstLine = msg.content.splitlines()[0].replace("~","").replace("*","").replace("_","")[:50]
-                    foundPuzzles.append("\n• [" + firstLine + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
+                    foundPuzzles.append("\n• "+("("+solvedcnt+") " if solved_count > 0 else "")+ \
+                        "[" + firstLine + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
 
         if len(foundPuzzles) == 0:
             replymsg = "No puzzles found matching the criteria."
@@ -162,6 +193,7 @@ async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
 
         replytitle = str(foundPuzzlesCount)+' '+("Untested " if solved_count == 0 else '')+ \
             puzzle_type+" puzzle"+("" if foundPuzzlesCount == 1 else "s")+" in the past "+str(max_age)+" day" + ("" if max_age == 1 else "s" )+ \
+            (' containing "' + search_terms +'"' if search_terms != "" else "") + \
             (" with ≤ "+str(solved_count)+" solve" + ("" if solved_count == 1 else "s") if solved_count != 0 else "") + \
             ":"
         embed = discord.Embed(title=replytitle)
@@ -169,6 +201,6 @@ async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
         if len(foundPuzzles) > 0:
             embed.set_footer(text="... and "+str(len(foundPuzzles))+" more")
 
-        return (embed,False)
+        return embed
 
 bot.run(access_token)
