@@ -98,6 +98,7 @@ slash = SlashCommand(bot, sync_commands=True)
     ]
 )
 async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
+    await ctx.defer()
     response = await findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
     await ctx.send(embed = response[0], hidden = response[1])
 
