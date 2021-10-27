@@ -179,7 +179,7 @@ async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
                 if hasAllTerms:
                     #post first line of text (up to 50 characters) then the message ID.
                     firstLine = msg.content.splitlines()[0].replace("~","").replace("*","").replace("_","")[:50]
-                    foundPuzzles.append("\n• "+("("+solvedcnt+") " if solved_count > 0 else "")+ \
+                    foundPuzzles.append("\n• "+("("+str(solvedcnt)+") " if solved_count > 0 else "")+ \
                         "[" + firstLine + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
 
         if len(foundPuzzles) == 0:
