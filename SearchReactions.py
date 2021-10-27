@@ -1,7 +1,7 @@
 '''
 todo:
     search archives and introduce more choices based on reactions (ratings, tags)
-    make username @ (only if able to not mention).  Allowed_mentiond = None
+    maybe? make username @ (only if able to not mention).  Allowed_mentiond = None
     download all data to allow making top 10 lists based on reactions.
 '''
 
@@ -13,12 +13,6 @@ from discord import colour
 from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext
 from discord_slash.utils import manage_commands
-
-def isalnumspace(s):
-    return str.isalnum(s) or str.isspace(s) or str == '\n'
-
-def removeFormatting(s):
-    return ''.join(filter(isalnumspace,s))
 
 try:
     access_token= os.environ["ACCESS_TOKEN"]
@@ -128,7 +122,7 @@ async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
         replymsg = ''
         foundPuzzles = []
 
-        searchTermsList = removeFormatting(search_terms).lower().split()
+        searchTermsList = search_terms.lower().split()
 
         from_date = datetime.datetime.now() - datetime.timedelta(days= max_age)
         async for msg in bot.get_channel(search_channel_id).history(after=from_date,limit=None):
@@ -144,18 +138,17 @@ async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
 
             if solvedcnt <= reaction_threshhold + solved_count and brokencnt == reaction_threshhold:
                 #check search_terms
-                msgContent = removeFormatting(msg.content)
+                msgContentToSearch = msg.content.lower()
                 hasAllTerms = True
                 if (len(searchTermsList)>0):
-                    msgterms = msgContent.lower().split()
                     for term in searchTermsList:
-                        if term not in msgterms:
+                        if term not in msgContentToSearch:
                             hasAllTerms = False
                             break
                 if hasAllTerms:
                     #post first line of text (up to 50 characters) then the message ID.
-                    firstLine = msgContent.splitlines()[0]
-                    foundPuzzles.append("\n• [" + firstLine[:50] + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
+                    firstLine = msg.content.splitlines()[0].replace("~","").replace("*","").replace("_","")[:50]
+                    foundPuzzles.append("\n• [" + firstLine + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
 
         if len(foundPuzzles) == 0:
             replymsg = "No puzzles found matching the criteria."
