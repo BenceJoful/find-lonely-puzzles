@@ -26,9 +26,9 @@ try:
     sudoku_submissions_channel_id = int(os.environ["SUDOKU_SUBMISSIONS_CHANNEL_ID"])
     other_submissions_channel_id = int(os.environ["OTHER_SUBMISSIONS_CHANNEL_ID"])
     max_puzzles_return = int(os.environ["MAX_PUZZLES_RETURN"])
-    reaction_threshhold = int(os.environ["REACTION_THRESHHOLD"])
     days_to_search = int(os.environ["DAYS_TO_SEARCH"])
     bot_commands_channel_id = int(os.environ['BOT_COMMANDS_CHANNEL_ID'])
+    reaction_threshhold = int(os.environ["REACTION_THRESHHOLD"])
     solved_emoji_name = os.environ['SOLVED_EMOJI_NAME']
     broken_emoji_name = os.environ['BROKEN_EMOJI_NAME']
 except:
@@ -39,9 +39,9 @@ except:
     sudoku_submissions_channel_id = int(config['db']['SUDOKU_SUBMISSIONS_CHANNEL_ID'])
     other_submissions_channel_id = int(config['db']['OTHER_SUBMISSIONS_CHANNEL_ID'])
     max_puzzles_return = int(config['db']['MAX_PUZZLES_RETURN'])
-    reaction_threshhold = int(config['db']['REACTION_THRESHHOLD'])
     days_to_search = int(config['db']['DAYS_TO_SEARCH'])
     bot_commands_channel_id = int(config['db']['BOT_COMMANDS_CHANNEL_ID'])
+    reaction_threshhold = int(config['db']['REACTION_THRESHHOLD'])
     solved_emoji_name = config['db']['SOLVED_EMOJI_NAME']
     broken_emoji_name = config['db']['BROKEN_EMOJI_NAME']
 
