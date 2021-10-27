@@ -1,6 +1,8 @@
 '''
 todo:
     search archives and introduce more choices based on reactions (ratings, tags)
+    make username @ (only if able to not mention).  Allowed_mentiond = None
+    download all data to allow making top 10 lists based on reactions.
 '''
 
 import os
@@ -12,6 +14,12 @@ from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext
 from discord_slash.utils import manage_commands
 
+def isalnumspace(s):
+    return str.isalnum(s) or str.isspace(s) or str == '\n'
+
+def removeFormatting(s):
+    return ''.join(filter(isalnumspace,s))
+
 try:
     access_token= os.environ["ACCESS_TOKEN"]
     guild_id = os.environ["GUILD_ID"]
@@ -21,6 +29,8 @@ try:
     reaction_threshhold = int(os.environ["REACTION_THRESHHOLD"])
     days_to_search = int(os.environ["DAYS_TO_SEARCH"])
     bot_commands_channel_id = int(os.environ['BOT_COMMANDS_CHANNEL_ID'])
+    solved_emoji_name = os.environ['SOLVED_EMOJI_NAME']
+    broken_emoji_name = os.environ['BROKEN_EMOJI_NAME']
 except:
     config= configparser.ConfigParser()
     config.read('localconfig.ini')
@@ -32,9 +42,13 @@ except:
     reaction_threshhold = int(config['db']['REACTION_THRESHHOLD'])
     days_to_search = int(config['db']['DAYS_TO_SEARCH'])
     bot_commands_channel_id = int(config['db']['BOT_COMMANDS_CHANNEL_ID'])
+    solved_emoji_name = config['db']['SOLVED_EMOJI_NAME']
+    broken_emoji_name = config['db']['BROKEN_EMOJI_NAME']
+
     
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 slash = SlashCommand(bot, sync_commands=True)
+
 
 @slash.slash(
     name="lonelypuzzles", description="Search for puzzles which need testing", 
@@ -54,6 +68,12 @@ slash = SlashCommand(bot, sync_commands=True)
                     value="other"
                 ),
             ],
+        ),
+        manage_commands.create_option(
+            name="search_terms",
+            description="Words that are required to exist in the submission",
+            required=False,
+            option_type=3
         ),
         manage_commands.create_option(
             name="max_age",
@@ -76,17 +96,27 @@ slash = SlashCommand(bot, sync_commands=True)
             ]
         ),
         manage_commands.create_option(
-            name="reaction_count",
-            description="Number of people who marked it as Solved / Attempted / Broken (default 0)",
+            name="solved_count",
+            description="Number of people who marked it as Solved (default 0)",
             required=False,
             option_type=4
         )
     ]
 )
-async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, max_age: int = days_to_search, reaction_count: int = 0):
-    if (ctx.channel_id != bot_commands_channel_id):
-        await ctx.send("I'd love to look for those kinds of puzzles for you, but I can only respond to messages in [#bot-commands](https://discord.com/channels/"+guild_id+"/"+str(bot_commands_channel_id)+"/).  Let's talk over there!",hidden=True)
-        return
+async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
+    print (ctx.channel.id)
+    response = await findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
+    await ctx.send(embed = response[0], hidden = response[1])
+
+@bot.command()
+async def lonelyPuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
+    response = await findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
+    if (not response[1]):  #can't do hidden, apparently, so just silently fail in other channels
+        await ctx.send(embed = response[0])
+
+async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count):
+    if (ctx.channel.id != bot_commands_channel_id):
+        return (discord.Embed(description="I'd love to look for those kinds of puzzles for you, but I can only respond to messages in [#bot-commands](https://discord.com/channels/"+guild_id+"/"+str(bot_commands_channel_id)+"/).  Let's talk over there!"),True)
 
     search_channel_id = 0
     if puzzle_type == 'sudoku':
@@ -97,48 +127,54 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, max_age: int = day
 
     if search_channel_id > 0:
         replymsg = ''
-        foundPuzzles = 0
+        foundPuzzles = []
+
+        searchTermsList = removeFormatting(search_terms).lower().split()
 
         from_date = datetime.datetime.now() - datetime.timedelta(days= max_age)
         async for msg in bot.get_channel(search_channel_id).history(after=from_date,limit=None):
-            reactioncnt = 0
+
+            solvedcnt = 0
+            brokencnt = 0
             for reaction in msg.reactions:
-                reactioncnt+=reaction.count
+                if (reaction.custom_emoji and reaction.emoji.name == solved_emoji_name):
+                    solvedcnt += reaction.count
+                elif (reaction.custom_emoji and reaction.emoji.name == broken_emoji_name):
+                    brokencnt += reaction.count
 
-            if reactioncnt <= reaction_threshhold + reaction_count:
-                #post first line of text (up to 50 characters) then the message ID.
-                firstLine = msg.content.splitlines()[0].replace("~~","").replace("*","").replace("_","")
-                msg_data = "\n• [" + firstLine[:50] + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name
-                if (len(replymsg+msg_data)<4096):
-                    replymsg += msg_data    
-                    foundPuzzles += 1
-                else:
-                    break
+            if solvedcnt <= reaction_threshhold + solved_count and brokencnt == 0:
+                #check search_terms
+                msgContent = removeFormatting(msg.content)
+                hasAllTerms = True
+                if (len(searchTermsList)>0):
+                    msgterms = msgContent.lower().split()
+                    for term in searchTermsList:
+                        if term not in msgterms:
+                            hasAllTerms = False
+                            break
+                if hasAllTerms:
+                    #post first line of text (up to 50 characters) then the message ID.
+                    firstLine = msgContent.splitlines()[0]
+                    foundPuzzles.append("\n• [" + firstLine[:50] + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
 
-            if foundPuzzles == max_puzzles_return:
-                break
-
-        if foundPuzzles == 0:
+        if len(foundPuzzles) == 0:
             replymsg = "No puzzles found matching the criteria."
 
-        
-        replytitle = str(foundPuzzles)+' '+("Untested " if reaction_count == 0 else '')+ \
-            puzzle_type+" puzzles in the past "+str(max_age)+" days"+ \
-            (" with ≤ "+str(reaction_count)+" reactions" if reaction_count != 0 else "") + \
+        foundPuzzlesCount = len(foundPuzzles)
+        listedPuzzlesCount = 0
+        while len(foundPuzzles) > 0 and len(replymsg+foundPuzzles[0])<4096 and listedPuzzlesCount < max_puzzles_return:
+            replymsg += foundPuzzles.pop(0)
+            listedPuzzlesCount += 1
+
+        replytitle = str(foundPuzzlesCount)+' '+("Untested " if solved_count == 0 else '')+ \
+            puzzle_type+" puzzle"+("" if foundPuzzlesCount == 1 else "s")+" in the past "+str(max_age)+" days"+ \
+            (" with ≤ "+str(solved_count)+" solves" if solved_count != 0 else "") + \
             ":"
         embed = discord.Embed(title=replytitle)
         embed.description=replymsg
+        if len(foundPuzzles) > 0:
+            embed.set_footer(text="... and "+str(len(foundPuzzles))+" more")
 
-        await ctx.send(embed=embed)
-
-'''
-@slash.slash(name="test", description="test desc")
-async def _test(ctx: SlashContext):
-    if (ctx.channel_id == bot_commands_channel_id):
-        await ctx.send("ok")
-    else:
-        await ctx.send("it's hidden here:",hidden=True)
-    #print(ctx.channel)
-'''
+        return (embed,False)
 
 bot.run(access_token)
