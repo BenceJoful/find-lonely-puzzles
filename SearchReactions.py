@@ -160,8 +160,8 @@ async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
             listedPuzzlesCount += 1
 
         replytitle = str(foundPuzzlesCount)+' '+("Untested " if solved_count == 0 else '')+ \
-            puzzle_type+" puzzle"+("" if foundPuzzlesCount == 1 else "s")+" in the past "+str(max_age)+" day"+("" if max_age == 1 else "s" )+ \
-            (" with ≤ "+str(solved_count)+" solve"+(+"" if solved_count == 1 else "s") if solved_count != 0 else "") + \
+            puzzle_type+" puzzle"+("" if foundPuzzlesCount == 1 else "s")+" in the past "+str(max_age)+" day" + ("" if max_age == 1 else "s" )+ \
+            (" with ≤ "+str(solved_count)+" solve" + ("" if solved_count == 1 else "s") if solved_count != 0 else "") + \
             ":"
         embed = discord.Embed(title=replytitle)
         embed.description=replymsg
