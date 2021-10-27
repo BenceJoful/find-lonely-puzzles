@@ -104,7 +104,6 @@ slash = SlashCommand(bot, sync_commands=True)
     ]
 )
 async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
-    print (ctx.channel.id)
     response = await findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
     await ctx.send(embed = response[0], hidden = response[1])
 
@@ -137,12 +136,14 @@ async def findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
             solvedcnt = 0
             brokencnt = 0
             for reaction in msg.reactions:
-                if (reaction.custom_emoji and reaction.emoji.name == solved_emoji_name):
-                    solvedcnt += reaction.count
-                elif (reaction.custom_emoji and reaction.emoji.name == broken_emoji_name):
-                    brokencnt += reaction.count
+                if (reaction.custom_emoji):
+                    print(reaction.emoji.name)
+                    if (reaction.emoji.name == solved_emoji_name):
+                        solvedcnt += reaction.count
+                    elif (reaction.emoji.name == broken_emoji_name):
+                        brokencnt += reaction.count
 
-            if solvedcnt <= reaction_threshhold + solved_count and brokencnt == 0:
+            if solvedcnt <= reaction_threshhold + solved_count and brokencnt == reaction_threshhold:
                 #check search_terms
                 msgContent = removeFormatting(msg.content)
                 hasAllTerms = True
