@@ -108,7 +108,7 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, search_terms: str 
     await ctx.send(embed = response[0], hidden = response[1])
 
 @bot.command()
-async def lonelyPuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
+async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
     response = await findLonelyPuzzles(ctx, puzzle_type, search_terms,max_age,solved_count)
     if (not response[1]):  #can't do hidden, apparently, so just silently fail in other channels
         await ctx.send(embed = response[0])
