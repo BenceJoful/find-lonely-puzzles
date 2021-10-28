@@ -10,9 +10,7 @@ import datetime
 import configparser
 import traceback
 import discord
-from discord import colour
 from discord.ext import commands
-from discord.message import Message
 from discord_slash import SlashCommand, SlashContext
 from discord_slash.utils import manage_commands
 
@@ -29,7 +27,7 @@ try:
     broken_emoji_name = os.environ['BROKEN_EMOJI_NAME']
     calling_bot_id = int(os.environ['CALLING_BOT_ID'])
 except:
-    config= configparser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read('localconfig.ini')
     access_token = config['db']['ACCESS_TOKEN']
     guild_id = config['db']['GUILD_ID']
@@ -108,7 +106,7 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, search_terms: str 
     if (send_channel is None):
         send_channel = await ctx.author.create_dm()
 
-    await ctx.reply("I'm finding lonely puzzles for you, please check your DMs for details",hidden=True)
+    await ctx.reply("I'm finding lonely puzzles, please check your DMs for details",hidden=True)
     
     response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
     await send_channel.send(embed = response)
@@ -121,7 +119,7 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
 
 @bot.listen()
 async def on_message(message):
-    #if it mentions me, process like a command.  Don't support search to start.  Or put the search terms last.
+    #if it mentions me, process like a command.
     if (bot.user in message.mentions):
         send_channel = message.channel
         if (message.author.id != calling_bot_id):
@@ -196,7 +194,7 @@ async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
                                 hasAllTerms = False
                                 break
                     if hasAllTerms:
-                        #post first line of text (up to 50 characters) then the message ID.
+                        #post first line of text (up to 50 characters) linking to the message.
                         firstLine = msg.content.splitlines()[0].replace("~","").replace("*","").replace("_","")[:50]
                         foundPuzzles.append("\n• "+("("+str(solvedcnt - reaction_threshhold)+") " if solved_count > 0 else "")+ \
                             "[" + firstLine + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
@@ -214,8 +212,9 @@ async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
             replymsg += foundPuzzles.pop(0)
             listedPuzzlesCount += 1
 
-        replytitle = str(foundPuzzlesCount)+' '+("Untested " if solved_count == 0 else '')+ \
-            puzzle_type+" puzzle"+("" if foundPuzzlesCount == 1 else "s")+" in the past "+str(max_age)+" day" + ("" if max_age == 1 else "s" )+ \
+        replytitle = str(foundPuzzlesCount)+' '+("Untested " if solved_count == 0 else '') + \
+            puzzle_type+" puzzle"+("" if foundPuzzlesCount == 1 else "s") + \
+            " in the past "+str(max_age)+" day" + ("" if max_age == 1 else "s" ) + \
             (' containing "' + search_terms +'"' if search_terms != "" else "") + \
             (" with ≤ "+str(solved_count)+" solve" + ("" if solved_count == 1 else "s") if solved_count != 0 else "") + \
             ":"
