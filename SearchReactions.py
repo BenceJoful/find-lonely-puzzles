@@ -11,6 +11,7 @@ import configparser
 import discord
 from discord import colour
 from discord.ext import commands
+from discord.message import Message
 from discord_slash import SlashCommand, SlashContext
 from discord_slash.utils import manage_commands
 
@@ -21,10 +22,10 @@ try:
     other_submissions_channel_id = int(os.environ["OTHER_SUBMISSIONS_CHANNEL_ID"])
     max_puzzles_return = int(os.environ["MAX_PUZZLES_RETURN"])
     days_to_search = int(os.environ["DAYS_TO_SEARCH"])
-    bot_commands_channel_id = int(os.environ['BOT_COMMANDS_CHANNEL_ID'])
     reaction_threshhold = int(os.environ["REACTION_THRESHHOLD"])
     solved_emoji_name = os.environ['SOLVED_EMOJI_NAME']
     broken_emoji_name = os.environ['BROKEN_EMOJI_NAME']
+    calling_bot_id = int(os.environ['CALLING_BOT_ID'])
 except:
     config= configparser.ConfigParser()
     config.read('localconfig.ini')
@@ -34,10 +35,10 @@ except:
     other_submissions_channel_id = int(config['db']['OTHER_SUBMISSIONS_CHANNEL_ID'])
     max_puzzles_return = int(config['db']['MAX_PUZZLES_RETURN'])
     days_to_search = int(config['db']['DAYS_TO_SEARCH'])
-    bot_commands_channel_id = int(config['db']['BOT_COMMANDS_CHANNEL_ID'])
     reaction_threshhold = int(config['db']['REACTION_THRESHHOLD'])
     solved_emoji_name = config['db']['SOLVED_EMOJI_NAME']
     broken_emoji_name = config['db']['BROKEN_EMOJI_NAME']
+    calling_bot_id = int(config['db']['CALLING_BOT_ID'])
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 slash = SlashCommand(bot, sync_commands=True)
@@ -96,12 +97,14 @@ slash = SlashCommand(bot, sync_commands=True)
     ]
 )
 async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
-    if (ctx.channel.id != bot_commands_channel_id):
-        await ctx.send(discord.Embed(description="I'd love to look for those kinds of puzzles for you, but I can only respond to messages in [#bot-commands](https://discord.com/channels/"+guild_id+"/"+str(bot_commands_channel_id)+"/).  Let's talk over there!"),hidden=True)
-    else:
-        await ctx.defer()
-        response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
-        await ctx.send(embed = response)
+    send_channel = ctx.author.dm_channel
+    if (send_channel is None):
+        send_channel = await ctx.author.create_dm()
+
+    await ctx.reply("I'm finding lonely puzzles for you, please check your DMs for details",hidden=True)
+    
+    response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
+    await send_channel.send(embed = response)
 
 '''@bot.command()
 async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: int = days_to_search, solved_count: int = 0):
@@ -111,9 +114,17 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
 
 @bot.listen()
 async def on_message(message):
-    helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku' or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
     #if it mentions me, process like a command.  Don't support search to start.  Or put the search terms last.
-    if (message.channel.id == bot_commands_channel_id and bot.user in message.mentions):
+    if (bot.user in message.mentions):
+        print (message.author.id)
+        send_channel = message.channel
+        if (message.author.id != calling_bot_id):
+            send_channel = message.author.dm_channel
+            if (send_channel is None):
+                send_channel = await message.author.create_dm()
+
+        helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku' or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
+
         args = message.content.split()
         if len(args) > 4:
             if args[1] == 'lonelypuzzles':
@@ -122,23 +133,23 @@ async def on_message(message):
                 try:
                     max_age = int(args[3])
                 except ValueError:
-                    await message.channel.send(embed = discord.Embed(description='max_age is not an integer.\n'+helpmsg))
+                    await send_channel.send(embed = discord.Embed(description='max_age is not an integer.\n'+helpmsg))
                     return
 
                 solved_count = 0
                 try:
                     solved_count = int(args[4])
                 except ValueError:
-                    await message.channel.send(embed = discord.Embed(description='solved_count is not an integer.\n'+helpmsg))
+                    await send_channel.send(embed = discord.Embed(description='solved_count is not an integer.\n'+helpmsg))
                     return
 
                 search_terms = " ".join(args[5:])
                 response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
-                await message.channel.send(embed = response)
+                await send_channel.send(embed = response)
             else:
-                await message.channel.send(embed = discord.Embed(description='No command given.\n'+helpmsg))
+                await send_channel.send(embed = discord.Embed(description='No command given.\n'+helpmsg))
         else:
-            await message.channel.send(embed = discord.Embed(description='Insufficient arguments given.\n'+helpmsg))
+            await send_channel.send(embed = discord.Embed(description='Insufficient arguments given.\n'+helpmsg))
 
 async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
     search_channel_id = 0
