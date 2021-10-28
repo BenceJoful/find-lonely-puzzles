@@ -8,6 +8,7 @@ todo:
 import os
 import datetime
 import configparser
+import traceback
 import discord
 from discord import colour
 from discord.ext import commands
@@ -116,7 +117,6 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
 async def on_message(message):
     #if it mentions me, process like a command.  Don't support search to start.  Or put the search terms last.
     if (bot.user in message.mentions):
-        print (message.author.id)
         send_channel = message.channel
         if (message.author.id != calling_bot_id):
             send_channel = message.author.dm_channel
@@ -167,30 +167,34 @@ async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
 
         from_date = datetime.datetime.now() - datetime.timedelta(days= max_age)
         async for msg in bot.get_channel(search_channel_id).history(after=from_date,limit=None):
+            try:
+                solvedcnt = 0
+                brokencnt = 0
+                for reaction in msg.reactions:
+                    if (reaction.custom_emoji):
+                        if (reaction.emoji.name == solved_emoji_name):
+                            solvedcnt += reaction.count
+                        elif (reaction.emoji.name == broken_emoji_name):
+                            brokencnt += reaction.count
 
-            solvedcnt = 0
-            brokencnt = 0
-            for reaction in msg.reactions:
-                if (reaction.custom_emoji):
-                    if (reaction.emoji.name == solved_emoji_name):
-                        solvedcnt += reaction.count
-                    elif (reaction.emoji.name == broken_emoji_name):
-                        brokencnt += reaction.count
-
-            if solvedcnt <= reaction_threshhold + solved_count and brokencnt == reaction_threshhold:
-                #check search_terms
-                msgContentToSearch = msg.content.lower()
-                hasAllTerms = True
-                if (len(searchTermsList)>0):
-                    for term in searchTermsList:
-                        if term not in msgContentToSearch:
-                            hasAllTerms = False
-                            break
-                if hasAllTerms:
-                    #post first line of text (up to 50 characters) then the message ID.
-                    firstLine = msg.content.splitlines()[0].replace("~","").replace("*","").replace("_","")[:50]
-                    foundPuzzles.append("\n• "+("("+str(solvedcnt - reaction_threshhold)+") " if solved_count > 0 else "")+ \
-                        "[" + firstLine + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
+                if solvedcnt <= reaction_threshhold + solved_count and brokencnt == reaction_threshhold:
+                    #check search_terms
+                    msgContentToSearch = msg.content.lower()
+                    hasAllTerms = True
+                    if (len(searchTermsList)>0):
+                        for term in searchTermsList:
+                            if term not in msgContentToSearch:
+                                hasAllTerms = False
+                                break
+                    if hasAllTerms:
+                        #post first line of text (up to 50 characters) then the message ID.
+                        firstLine = msg.content.splitlines()[0].replace("~","").replace("*","").replace("_","")[:50]
+                        foundPuzzles.append("\n• "+("("+str(solvedcnt - reaction_threshhold)+") " if solved_count > 0 else "")+ \
+                            "[" + firstLine + "](https://discord.com/channels/"+guild_id+"/"+str(msg.channel.id)+"/" + str(msg.id) + ") by "+msg.author.name)
+            except:
+                print("Failed to process message:")
+                print(msg)
+                traceback.print_exc()
 
         if len(foundPuzzles) == 0:
             replymsg = "No puzzles found matching the criteria."
