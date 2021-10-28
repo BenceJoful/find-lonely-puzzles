@@ -21,6 +21,7 @@ try:
     guild_id = os.environ["GUILD_ID"]
     sudoku_submissions_channel_id = int(os.environ["SUDOKU_SUBMISSIONS_CHANNEL_ID"])
     other_submissions_channel_id = int(os.environ["OTHER_SUBMISSIONS_CHANNEL_ID"])
+    word_submissions_channel_id = int(os.environ["WORD_SUBMISSIONS_CHANNEL_ID"])
     max_puzzles_return = int(os.environ["MAX_PUZZLES_RETURN"])
     days_to_search = int(os.environ["DAYS_TO_SEARCH"])
     reaction_threshhold = int(os.environ["REACTION_THRESHHOLD"])
@@ -34,6 +35,7 @@ except:
     guild_id = config['db']['GUILD_ID']
     sudoku_submissions_channel_id = int(config['db']['SUDOKU_SUBMISSIONS_CHANNEL_ID'])
     other_submissions_channel_id = int(config['db']['OTHER_SUBMISSIONS_CHANNEL_ID'])
+    word_submissions_channel_id = int(config['db']["WORD_SUBMISSIONS_CHANNEL_ID"])
     max_puzzles_return = int(config['db']['MAX_PUZZLES_RETURN'])
     days_to_search = int(config['db']['DAYS_TO_SEARCH'])
     reaction_threshhold = int(config['db']['REACTION_THRESHHOLD'])
@@ -60,6 +62,10 @@ slash = SlashCommand(bot, sync_commands=True)
                 manage_commands.create_choice(
                     name="Other Puzzles",
                     value="other"
+                ),
+                manage_commands.create_choice(
+                    name="Word Puzzles",
+                    value="word"
                 ),
             ],
         ),
@@ -123,7 +129,7 @@ async def on_message(message):
             if (send_channel is None):
                 send_channel = await message.author.create_dm()
 
-        helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku' or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
+        helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku', 'word', or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
 
         args = message.content.split()
         if len(args) > 4:
@@ -158,6 +164,9 @@ async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
 
     if puzzle_type == 'other':
         search_channel_id = other_submissions_channel_id
+
+    if puzzle_type == 'word':
+        search_channel_id = word_submissions_channel_id
 
     if search_channel_id > 0:
         replymsg = ''
