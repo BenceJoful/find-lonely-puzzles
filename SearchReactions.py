@@ -3,6 +3,8 @@ todo:
     search archives and introduce more choices based on reactions (ratings, tags)
     maybe? make username @ (only if able to not mention).  Allowed_mentiond = None
     download all data to allow making top 10 lists based on reactions.
+    show query (hidden in some way?)
+    given message id (or search via pins or something?), rerun query and update message.
 '''
 
 import os
@@ -90,6 +92,10 @@ slash = SlashCommand(bot, sync_commands=True)
                 manage_commands.create_choice(
                     name="Month",
                     value=30
+                ),
+                manage_commands.create_choice(
+                    name="Year",
+                    value=365
                 )
             ]
         ),
