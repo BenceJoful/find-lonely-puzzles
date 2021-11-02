@@ -3,15 +3,18 @@ todo:
     search archives and introduce more choices based on reactions (ratings, tags)
     maybe? make username @ (only if able to not mention).  Allowed_mentiond = None
     download all data to allow making top 10 lists based on reactions.
-    show query (hidden in some way?)
-    given message id (or search via pins or something?), rerun query and update message.
+    minimum age (0 days default?)
+    track usage:
+        on a designated channel (my dms), just log each request, i think.  Just the params.
 '''
 
 import os
 import datetime
 import configparser
+from re import search
 import traceback
 import discord
+from discord import channel
 from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext
 from discord_slash.utils import manage_commands
@@ -28,6 +31,7 @@ try:
     solved_emoji_name = os.environ['SOLVED_EMOJI_NAME']
     broken_emoji_name = os.environ['BROKEN_EMOJI_NAME']
     calling_bot_id = int(os.environ['CALLING_BOT_ID'])
+    log_channel_id = int(os.environ['LOG_CHANNEL_ID'])
 except:
     config = configparser.ConfigParser()
     config.read('localconfig.ini')
@@ -42,6 +46,7 @@ except:
     solved_emoji_name = config['db']['SOLVED_EMOJI_NAME']
     broken_emoji_name = config['db']['BROKEN_EMOJI_NAME']
     calling_bot_id = int(config['db']['CALLING_BOT_ID'])
+    log_channel_id = int(config['db']['LOG_CHANNEL_ID'])
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 slash = SlashCommand(bot, sync_commands=True)
@@ -101,7 +106,7 @@ slash = SlashCommand(bot, sync_commands=True)
         ),
         manage_commands.create_option(
             name="solved_count",
-            description="Number of people who marked it as Solved (default 0)",
+            description="Number of people who marked it as Solved (0 default)",
             required=False,
             option_type=4
         )
@@ -114,7 +119,7 @@ async def _lonelypuzzles(ctx: SlashContext, puzzle_type: str, search_terms: str 
 
     await ctx.reply("I'm finding lonely puzzles, please check your DMs for details",hidden=True)
     
-    response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
+    response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count,ctx.author.name)
     await send_channel.send(embed = response)
 
 '''@bot.command()
@@ -125,43 +130,91 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
 
 @bot.listen()
 async def on_message(message):
+    #print(message.author.id)
     #if it mentions me, process like a command.
-    if (bot.user in message.mentions):
-        send_channel = message.channel
-        if (message.author.id != calling_bot_id):
+    if (bot.user in message.mentions and bot.user != message.author):
+        args = message.content.split()
+        if (message.author.id == calling_bot_id and args[1]=="echo"):
             send_channel = message.author.dm_channel
             if (send_channel is None):
                 send_channel = await message.author.create_dm()
 
-        helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku', 'word', or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
+            await message.channel.send(embed=discord.Embed(description=send_channel.id))
 
-        args = message.content.split()
-        if len(args) > 4:
-            if args[1] == 'lonelypuzzles':
-                puzzle_type = args[2]
-                max_age = 0
-                try:
-                    max_age = int(args[3])
-                except ValueError:
-                    await send_channel.send(embed = discord.Embed(description='max_age is not an integer.\n'+helpmsg))
-                    return
+            return
+        if (message.author.id == calling_bot_id and len(args)==2 and args[1]=="updatepins"):
+            #updates pins in this channel
+            for msg in await message.channel.pins():
+                if (msg.pinned and msg.author == bot.user and len(msg.embeds)>0):
+                    titleargs = msg.embeds[0].title.split(' ')
+                    
+                    puzzle_type=''
+                    max_age=7
+                    solved_count=0
+                    search_terms=[]
+                    finding_search_terms=False
+                    while len(titleargs)>0:
+                        arg = titleargs.pop(0)
+                        if (puzzle_type == '' and arg in ['sudoku','other','word']):
+                            puzzle_type = arg
+                        elif(arg == 'past'):
+                            max_age = int(titleargs.pop(0))
+                        elif(arg == '≤'):
+                            solved_count = int(titleargs.pop(0))
+                        elif(arg[0] == '"'):
+                            finding_search_terms = True
 
-                solved_count = 0
-                try:
-                    solved_count = int(args[4])
-                except ValueError:
-                    await send_channel.send(embed = discord.Embed(description='solved_count is not an integer.\n'+helpmsg))
-                    return
+                        if (finding_search_terms):
+                            if (arg[-1]=='"'):
+                                finding_search_terms=False
+                                search_terms.append(arg[:-1])
+                                search_terms[0]=search_terms[0][1:]
+                            elif (arg[-2]=='"'):
+                                finding_search_terms=False
+                                search_terms.append(arg[:-2])
+                                search_terms[0]=search_terms[0][1:]
+                            else:
+                                search_terms.append(arg)
 
-                search_terms = " ".join(args[5:])
-                response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
-                await send_channel.send(embed = response)
-            else:
-                await send_channel.send(embed = discord.Embed(description='No command given.\n'+helpmsg))
+                    response = await findLonelyPuzzles(puzzle_type, ' '.join(search_terms),max_age,solved_count,"updating pins")
+                    await msg.edit(embed = response)
+
+            return
         else:
-            await send_channel.send(embed = discord.Embed(description='Insufficient arguments given.\n'+helpmsg))
+            send_channel = message.channel
+            if (message.author.id != calling_bot_id):
+                send_channel = message.author.dm_channel
+                if (send_channel is None):
+                    send_channel = await message.author.create_dm()
 
-async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
+            helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku', 'word', or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
+
+            if len(args) > 4:
+                if args[1] == 'lonelypuzzles':
+                    puzzle_type = args[2]
+                    max_age = 0
+                    try:
+                        max_age = int(args[3])
+                    except ValueError:
+                        await send_channel.send(embed = discord.Embed(description='max_age is not an integer.\n'+helpmsg))
+                        return
+
+                    solved_count = 0
+                    try:
+                        solved_count = int(args[4])
+                    except ValueError:
+                        await send_channel.send(embed = discord.Embed(description='solved_count is not an integer.\n'+helpmsg))
+                        return
+
+                    search_terms = " ".join(args[5:])
+                    response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count,message.author.name)
+                    await send_channel.send(embed = response)
+                else:
+                    await send_channel.send(embed = discord.Embed(description='No command given.\n'+helpmsg))
+            else:
+                await send_channel.send(embed = discord.Embed(description='Insufficient arguments given.\n'+helpmsg))
+
+async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count, author):
     search_channel_id = 0
     if puzzle_type == 'sudoku':
         search_channel_id = sudoku_submissions_channel_id
@@ -229,6 +282,32 @@ async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count):
         if len(foundPuzzles) > 0:
             embed.set_footer(text="... and "+str(len(foundPuzzles))+" more")
 
+        await logUsage(puzzle_type, search_terms, max_age, solved_count, author)
         return embed
+
+@bot.event
+async def on_ready():
+    print('{0.user} has logged in'.format(bot))
+
+async def logUsage(puzzle_type, search_terms, max_age, solved_count, author):
+    log_channel = await bot.fetch_channel(log_channel_id)
+    #get most recent Log message by this bot there.  Either edit it or create new one.
+    log_title = "Log "+datetime.datetime.now(datetime.timezone.utc).strftime("%m/%d/%Y")
+    log_message = None
+
+    async for msg in log_channel.history():
+        if (msg.author == bot.user and len(msg.embeds)>0 and msg.embeds[0].title == log_title):
+            log_message = msg
+            break
+
+    embed = discord.Embed(title=log_title)
+    embed.description=datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M")+" "+author+": "+puzzle_type + " " + str(max_age) + " " + str(solved_count) + " " + search_terms
+
+    if (log_message == None or len(log_message.embeds[0].description) > 3500):
+        await log_channel.send(embed = embed)
+    else:
+        embed.description=log_message.embeds[0].description+'\n'+embed.description
+        await log_message.edit(embed = embed)
+        #await log_message.delete()
 
 bot.run(access_token)
