@@ -282,14 +282,14 @@ async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count, auth
         if len(foundPuzzles) > 0:
             embed.set_footer(text="... and "+str(len(foundPuzzles))+" more")
 
-        await logUsage(puzzle_type, search_terms, max_age, solved_count, author)
+        await logUsage(puzzle_type, search_terms, max_age, solved_count, author, foundPuzzlesCount)
         return embed
 
 @bot.event
 async def on_ready():
     print('{0.user} has logged in'.format(bot))
 
-async def logUsage(puzzle_type, search_terms, max_age, solved_count, author):
+async def logUsage(puzzle_type, search_terms, max_age, solved_count, author, found_count):
     log_channel = await bot.fetch_channel(log_channel_id)
     #get most recent Log message by this bot there.  Either edit it or create new one.
     log_title = "Log "+datetime.datetime.now(datetime.timezone.utc).strftime("%m/%d/%Y")
@@ -301,7 +301,7 @@ async def logUsage(puzzle_type, search_terms, max_age, solved_count, author):
             break
 
     embed = discord.Embed(title=log_title)
-    embed.description=datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M")+" "+author+": "+puzzle_type + " " + str(max_age) + " " + str(solved_count) + " " + search_terms
+    embed.description=datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M")+" "+author+" " +"("+str(found_count)+"): "+puzzle_type + " " + str(max_age) + " " + str(solved_count) + " " + search_terms
 
     if (log_message == None or len(log_message.embeds[0].description) > 3500):
         await log_channel.send(embed = embed)
