@@ -4,8 +4,7 @@ todo:
     maybe? make username @ (only if able to not mention).  Allowed_mentiond = None
     download all data to allow making top 10 lists based on reactions.
     minimum age (0 days default?)
-    track usage:
-        on a designated channel (my dms), just log each request, i think.  Just the params.
+
 '''
 
 import os
@@ -48,7 +47,7 @@ except:
     calling_bot_id = int(config['db']['CALLING_BOT_ID'])
     log_channel_id = int(config['db']['LOG_CHANNEL_ID'])
 
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.default(),help_command=None)
 slash = SlashCommand(bot, sync_commands=True)
 
 @slash.slash(
