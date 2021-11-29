@@ -43,6 +43,7 @@ try:
     log_channel_id = int(os.environ['LOG_CHANNEL_ID'])
     sql_uri = os.environ['SQL_URI']
     sql_key = os.environ['SQL_KEY']
+    server_mod_id = int(os.environ['SERVER_MOD_ID'])
 
 except:
     config = configparser.ConfigParser()
@@ -63,6 +64,7 @@ except:
     log_channel_id = int(config['db']['LOG_CHANNEL_ID'])
     sql_uri = config['db']['SQL_URI']
     sql_key = config['db']['SQL_KEY']
+    server_mod_id = int(config['db']['SERVER_MOD_ID'])
 
 _dbcontainers = {"Items":None}
 def db_items():
@@ -184,6 +186,32 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
 
 @bot.listen()
 async def on_message(message):
+    #check for archive numbers incrementing properly.
+    if message.channel.id == archive_channel_id:
+        puzzle_id = 0
+        warning_msg = ""
+        try:
+            puzzle_id = int(message.content.split("]")[0].lstrip("["))
+        except:
+            warning_msg = "Invalid Entry # format.  Must be '[Entry #]' at the beginning of your post"
+        if warning_msg == "":
+            async for msg in message.channel.history(limit=2):
+                if message.id != msg.id:
+                    previous_puzzle_id = int(msg.content.split("]")[0].lstrip("["))
+                    if puzzle_id != previous_puzzle_id + 1:
+                        warning_msg = "Your recent submission to the puzzle archive has an invalid Entry #.  Your post must begin with '["+str(previous_puzzle_id+1)+"]'.  Please edit your post to have the correct entry number.  Thanks!"
+        if warning_msg != "":
+            send_channel = message.author.dm_channel
+            if (send_channel is None):
+                send_channel = await message.author.create_dm()
+            await send_channel.send(warning_msg)
+            
+            server_mod = await bot.fetch_user(server_mod_id) 
+            send_channel = server_mod.dm_channel
+            if (send_channel is None):
+                send_channel = await server_mod.create_dm()
+            await send_channel.send("Message sent to "+message.author.name+": \n"+warning_msg)
+
     #print(message.author.id)
     #if it mentions me, process like a command.
     if (bot.user in message.mentions and bot.user != message.author):
@@ -349,7 +377,7 @@ async def on_message(message):
             return
         elif (len(args)>=14 and args[1]=="search"):
             # searches archives for puzzles fitting the criteria.  
-            # e.g. Top ten mindblowing tapas of all time "@PuzzleDigestBot search Archive 21.June.2000 1.December.2021 0 5 0 99999 0 3 mindblowingpuzzle desc 10 he title=Here we go now"
+            # e.g. Top ten mindblowing tapas of all time "@PuzzleDigestBot search Archive 21.June.2000 1.December.2021 0 5 0 99999 0 3 mindblowingpuzzle desc 10 he title=Show Me"
             # Parameters:
             #   source (one of "Archive" or "Monthly_Archive")
             #   from_date (in format "dd.Month.YYYY", e.g. "21.June.2018").  Dates in UTC.
@@ -364,7 +392,7 @@ async def on_message(message):
             #   sort_order (one of "asc", "desc")
             #   max_results integer
             #   search_terms (zero or more words that must exist in first line of puzzle submission - can include tags, author, etc.)
-            #   title (zero or more words that will appear as the title of the embedded results.)
+            #   title (zero or more words that will appear as the title of the embedded results.  This parameter alone must be preceded by its name: e.g. "title=Show Me")
 
             max_results = int(args[13])
             query = "SELECT top "+str(max_results)+" * FROM c where "
