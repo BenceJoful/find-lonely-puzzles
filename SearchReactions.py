@@ -41,8 +41,8 @@ try:
     broken_emoji_name = os.environ['BROKEN_EMOJI_NAME']
     calling_bot_id = int(os.environ['CALLING_BOT_ID'])
     log_channel_id = int(os.environ['LOG_CHANNEL_ID'])
-    sql_uri = int(os.environ['SQL_URI'])
-    sql_key = int(os.environ['SQL_KEY'])
+    sql_uri = os.environ['SQL_URI']
+    sql_key = os.environ['SQL_KEY']
 
 except:
     config = configparser.ConfigParser()
