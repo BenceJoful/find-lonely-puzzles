@@ -190,15 +190,17 @@ async def on_message(message):
     if message.channel.id == archive_channel_id:
         puzzle_id = 0
         warning_msg = ""
-        try:
-            puzzle_id = int(message.content.split("]")[0].lstrip("["))
-        except:
-            return
-        async for msg in message.channel.history(limit=2):
-            if message.id != msg.id:
-                previous_puzzle_id = int(msg.content.split("]")[0].lstrip("["))
-                if puzzle_id != previous_puzzle_id + 1:
-                    warning_msg = "Your recent submission to the puzzle archive has an invalid Entry #.  Your post must begin with '["+str(previous_puzzle_id+1)+"]'.  Please edit your post to have the correct entry number.  Thanks!"
+        if message.content.startswith("["):
+            try:
+                puzzle_id = int(message.content.split("]")[0].lstrip("["))
+            except:
+                return
+                
+            async for msg in message.channel.history(limit=2):
+                if message.id != msg.id:
+                    previous_puzzle_id = int(msg.content.split("]")[0].lstrip("["))
+                    if puzzle_id != previous_puzzle_id + 1:
+                        warning_msg = "Your recent submission to the puzzle archive has an invalid Entry #.  Your post must begin with '["+str(previous_puzzle_id+1)+"]'.  Please edit your post to have the correct entry number.  Thanks!"
         if warning_msg != "":
             send_channel = message.author.dm_channel
             if (send_channel is None):
