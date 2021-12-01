@@ -509,15 +509,20 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
     print('Query returned {0} items. Operation consumed {1} request units'.format(len(items), request_charge))
 
     replymsg=""
+    idx = 0
     for item in items:
+        idx += 1
+        indexer = "•"
+        if max_results < 100:
+            indexer = str(idx)+"."
         #print (item)
         firstline = item['firstline']
-        author = " by "+str(item['author'])
+        author = ""
         if channel_id != archive_channel_id:
             firstline = firstline[:50]
-            author = ""
-        replymsg+="\n• [" + firstline + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ")" + author + \
-            " \n**" + emojify(str(round(item['difficulty'],1)).rstrip("0").rstrip("."))+"**"
+            author = " by "+str(item['author'])
+        replymsg+="\n"+indexer+" [" + firstline + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ")" + author + \
+            "\n⠀⠀**" + emojify(str(round(item['difficulty'],1)))+"**"
         if (item['goodpuzzle']>0):
             replymsg+="⠀👍"+str(item['goodpuzzle'])
         if (item['greatpuzzle']>0):
@@ -646,6 +651,7 @@ async def on_message(message):
                 "exceptionalpuzzle",
                 "rating_raw",
                 "rating_avg",
+                "reaction_count",
                 "beautifultheme",
                 "beautifullogic",
                 "inventivepuzzle",
@@ -757,6 +763,8 @@ async def on_message(message):
                     inventivepuzzle -= reaction_threshhold
                     mindblowingpuzzle -= reaction_threshhold
 
+                    reaction_count = goodpuzzle+greatpuzzle+exceptionalpuzzle+beautifultheme+beautifullogic+inventivepuzzle+mindblowingpuzzle
+
                     puzzlemessage = {
                             "id" : str(msg.id),
                             "source": args[2],
@@ -774,6 +782,7 @@ async def on_message(message):
                             "exceptionalpuzzle" : exceptionalpuzzle,
                             "rating_raw" : rating_raw,
                             "rating_avg" : rating_avg,
+                            "reaction_count" : reaction_count,
                             "beautifultheme" : beautifultheme,
                             "beautifullogic" : beautifullogic,
                             "inventivepuzzle" : inventivepuzzle,
