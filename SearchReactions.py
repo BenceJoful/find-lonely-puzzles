@@ -669,8 +669,7 @@ async def on_message(message):
                 for field in fields:
                     myCSV += str(item[field])+","
             
-            if message.author.id == developer_id:
-                await message.channel.send("",files=[discord.File(io.StringIO(myCSV),"PuzzleDigest_"+str(datetime.datetime.now())+".csv")])
+            await message.channel.send("",files=[discord.File(io.StringIO(myCSV),"PuzzleDigest_"+str(datetime.datetime.now())+".csv")])
 
         elif (message.author.id in (developer_id,calling_bot_id) and len(args)==5 and args[1]=="updatedb"):
             #updates DB stats for archive and monthly archive, based on from_date and to_date.
@@ -796,7 +795,8 @@ async def on_message(message):
                     db_items().upsert_item(body=puzzlemessage)
 
             print(str(datetime.datetime.now().time())+ ": Uploaded "+str(puzzcount)+" puzzles")
-            await message.channel.send(embed=discord.Embed(description="Done.  Uploaded "+str(puzzcount)+" puzzles"))
+            if message.author.id == developer_id:
+                await message.channel.send(embed=discord.Embed(description="Done.  Uploaded "+str(puzzcount)+" puzzles"))
 
             return
         elif (len(args)>=14 and args[1]=="searcharchive"):
