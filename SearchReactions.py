@@ -509,7 +509,7 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
     replymsg=""
     for item in items:
         #print (item)
-        replymsg+="\n• [" + item['firstline'] + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ") by "+str(item['author']) + \
+        replymsg+="\n• [" + item['firstline'][:50] + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ") by "+str(item['author']) + \
             "  **" + emojify(str(round(item['difficulty'],1)).rstrip("0").rstrip("."))+"**"
         if (item['goodpuzzle']>0):
             replymsg+="⠀👍"+str(item['goodpuzzle'])
@@ -722,7 +722,7 @@ async def on_message(message):
                 if difficulty_1 > 0 and difficulty_2 > 0 and difficulty_3 > 0 and difficulty_4 > 0 and difficulty_5 > 0:
                     firstline = "untitled"
                     if (msg.content != ""):
-                        firstline = msg.content.splitlines()[0].replace("~","").replace("*","").replace("_","")[:50]
+                        firstline = msg.content.splitlines()[0].replace("~","").replace("*","").replace("_","")[:1000]
 
                     difficulty_1 -= reaction_threshhold
                     difficulty_2 -= reaction_threshhold
