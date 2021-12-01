@@ -673,11 +673,11 @@ async def on_message(message):
             from_date = datetime.datetime.strptime(args[3], "%d.%B.%Y")
             to_date = datetime.datetime.strptime(args[4], "%d.%B.%Y") + datetime.timedelta(days= 1)
             
-            print(str(datetime.datetime.now().time())+ ": Getting and processing messages:",end="",flush=True)
+            print(str(datetime.datetime.now().time())+ ": Getting and processing messages:")
             puzzcount = 0
 
             async for msg in bot.get_channel(channel_id).history(after=from_date,before=to_date,limit=None):
-                print(".",end="",flush=True)
+                print(".")
                 difficulty_1 = 0
                 difficulty_2 = 0
                 difficulty_3 = 0
