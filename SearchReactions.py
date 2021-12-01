@@ -677,7 +677,6 @@ async def on_message(message):
             puzzcount = 0
 
             async for msg in bot.get_channel(channel_id).history(after=from_date,before=to_date,limit=None):
-                print(".")
                 difficulty_1 = 0
                 difficulty_2 = 0
                 difficulty_3 = 0
@@ -773,9 +772,11 @@ async def on_message(message):
                     #from pprint import pprint
                     #pprint(puzzlemessage)
                     puzzcount += 1
+                    if puzzcount % 10 == 0:
+                        print(puzzcount)
                     db_items().upsert_item(body=puzzlemessage)
 
-            print("\n"+str(datetime.datetime.now().time())+ ": Uploaded "+str(puzzcount)+" puzzles")
+            print(str(datetime.datetime.now().time())+ ": Uploaded "+str(puzzcount)+" puzzles")
                 
             return
         elif (len(args)>=14 and args[1]=="searcharchive"):
