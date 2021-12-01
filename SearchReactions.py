@@ -511,8 +511,13 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
     replymsg=""
     for item in items:
         #print (item)
-        replymsg+="\n• [" + item['firstline'][:50] + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ") by "+str(item['author']) + \
-            "  **" + emojify(str(round(item['difficulty'],1)).rstrip("0").rstrip("."))+"**"
+        firstline = item['firstline']
+        author = " by "+str(item['author'])
+        if channel_id != archive_channel_id:
+            firstline = firstline[:50]
+            author = ""
+        replymsg+="\n• [" + firstline + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ")" + author + \
+            " \n**" + emojify(str(round(item['difficulty'],1)).rstrip("0").rstrip("."))+"**"
         if (item['goodpuzzle']>0):
             replymsg+="⠀👍"+str(item['goodpuzzle'])
         if (item['greatpuzzle']>0):
@@ -660,7 +665,7 @@ async def on_message(message):
             
             if message.author.id == developer_id:
                 await message.channel.send("",files=[discord.File(io.StringIO(myCSV),"PuzzleDigest_"+str(datetime.datetime.now())+".csv")])
-                
+
         elif (message.author.id in (developer_id,calling_bot_id) and len(args)==5 and args[1]=="updatedb"):
             #updates DB stats for archive and monthly archive, based on from_date and to_date.
             #requires channel (one of "Archive","Monthly_Archive"), from_date (in format "dd.Month.YYYY", e.g. "21.June.2018"), to_date.  
