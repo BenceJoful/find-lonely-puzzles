@@ -42,6 +42,7 @@ try:
     solved_emoji_name = os.environ['SOLVED_EMOJI_NAME']
     broken_emoji_name = os.environ['BROKEN_EMOJI_NAME']
     calling_bot_id = int(os.environ['CALLING_BOT_ID'])
+    developer_id = int(os.environ['DEVELOPER_ID'])
     log_channel_id = int(os.environ['LOG_CHANNEL_ID'])
     sql_uri = os.environ['SQL_URI']
     sql_key = os.environ['SQL_KEY']
@@ -63,6 +64,7 @@ except:
     solved_emoji_name = config['db']['SOLVED_EMOJI_NAME']
     broken_emoji_name = config['db']['BROKEN_EMOJI_NAME']
     calling_bot_id = int(config['db']['CALLING_BOT_ID'])
+    developer_id = int(config['db']['DEVELOPER_ID'])
     log_channel_id = int(config['db']['LOG_CHANNEL_ID'])
     sql_uri = config['db']['SQL_URI']
     sql_key = config['db']['SQL_KEY']
@@ -574,18 +576,18 @@ async def on_message(message):
     #if it mentions me, process like a command.
     if (bot.user in message.mentions and bot.user != message.author):
         send_channel = message.channel
-        if (message.author.id != calling_bot_id):
+        if (message.author.id not in (calling_bot_id,developer_id)):
             send_channel = message.author.dm_channel
             if (send_channel is None):
                 send_channel = await message.author.create_dm()
                 
         args = message.content.split()
-        if (message.author.id == calling_bot_id and args[1]=="echo"):
+        if (message.author.id in (developer_id,calling_bot_id) and args[1]=="echo"):
 
             await message.channel.send(embed=discord.Embed(description=message.content))
 
             return
-        if (message.author.id == calling_bot_id and len(args)==2 and args[1]=="updatepins"):
+        if (message.author.id in (developer_id,calling_bot_id) and len(args)==2 and args[1]=="updatepins"):
             #updates pins in this channel
             for msg in await message.channel.pins():
                 if (msg.pinned and msg.author == bot.user and len(msg.embeds)>0):
@@ -622,7 +624,7 @@ async def on_message(message):
                     response = await findLonelyPuzzles(puzzle_type, ' '.join(search_terms),max_age,solved_count,"updating pins")
                     await msg.edit(embed = response)
             return
-        elif (message.author.id == calling_bot_id and args[1]=="downloaddb"):
+        elif (message.author.id in (developer_id,calling_bot_id) and args[1]=="downloaddb"):
 
             fields = [
                 "id",
@@ -656,7 +658,7 @@ async def on_message(message):
                 for field in fields:
                     myCSV += str(item[field])+","
             await message.channel.send("Here you go",files=[discord.File(io.StringIO(myCSV),"PuzzleDigest_"+str(datetime.datetime.now())+".csv")])
-        elif (message.author.id == calling_bot_id and len(args)==5 and args[1]=="updatedb"):
+        elif (message.author.id in (developer_id,calling_bot_id) and len(args)==5 and args[1]=="updatedb"):
             #updates DB stats for archive and monthly archive, based on from_date and to_date.
             #requires channel (one of "Archive","Monthly_Archive"), from_date (in format "dd.Month.YYYY", e.g. "21.June.2018"), to_date.  
             #dates will be inclusive: i.e. beginning of from_date to end of to_date.
