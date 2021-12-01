@@ -779,7 +779,8 @@ async def on_message(message):
                     db_items().upsert_item(body=puzzlemessage)
 
             print(str(datetime.datetime.now().time())+ ": Uploaded "+str(puzzcount)+" puzzles")
-                
+            await message.channel.send(embed=discord.Embed(description="Done.  Uploaded "+str(puzzcount)+" puzzles"))
+
             return
         elif (len(args)>=14 and args[1]=="searcharchive"):
             # searches archives for puzzles fitting the criteria.  
