@@ -651,13 +651,16 @@ async def on_message(message):
             myCSV = ",".join(fields)
             
             for item in db_items().query_items(
-                query="select * from c",
+                query="select * from c order by c.source, c.id",
                 enable_cross_partition_query=True
             ):
                 myCSV += "\n"
                 for field in fields:
                     myCSV += str(item[field])+","
-            await message.channel.send("Here you go",files=[discord.File(io.StringIO(myCSV),"PuzzleDigest_"+str(datetime.datetime.now())+".csv")])
+            
+            if message.author.id == developer_id:
+                await message.channel.send("",files=[discord.File(io.StringIO(myCSV),"PuzzleDigest_"+str(datetime.datetime.now())+".csv")])
+                
         elif (message.author.id in (developer_id,calling_bot_id) and len(args)==5 and args[1]=="updatedb"):
             #updates DB stats for archive and monthly archive, based on from_date and to_date.
             #requires channel (one of "Archive","Monthly_Archive"), from_date (in format "dd.Month.YYYY", e.g. "21.June.2018"), to_date.  
