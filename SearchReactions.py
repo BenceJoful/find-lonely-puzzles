@@ -12,10 +12,12 @@ todo:
 
 
     allow pinning and updating pins for archive search.
-    on message in archive, check for proper incrementing
+        display relevant portions in slash-command style language in footer?
+    in search, ensure we don't go over the character limit.
 '''
 
 import os
+import io
 import datetime
 import pytz
 import configparser
@@ -105,7 +107,7 @@ def emojify(text):
     return returntxt
     
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default(),help_command=None)
-slash = SlashCommand(bot, sync_commands=True)
+slash = SlashCommand(bot, sync_commands=True,debug_guild=guild_id)
 
 @slash.slash(
     name="lonelypuzzles", description="Search for puzzles which need testing", 
@@ -184,6 +186,361 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
         response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
         await ctx.send(embed = response)'''
 
+'''
+@slash.slash(
+    name="searcharchive", description="Search for puzzles in the Archive or Monthly Archive on various criteria", 
+    options=[
+        manage_commands.create_option(
+            name="archive_name",
+            description="Archive Name",
+            required=True,
+            option_type=3,
+            choices=[
+                manage_commands.create_choice(
+                    name="Archive",
+                    value="Archive"
+                ),
+                manage_commands.create_choice(
+                    name="Monthly Archive",
+                    value="Monthly_Archive"
+                )
+            ],
+        ),
+
+        manage_commands.create_option(
+            name="max_age",
+            description="Maximum age (default No Limit)",
+            required=False,
+            option_type=4,
+            choices=[
+                manage_commands.create_choice(
+                    name="Day",
+                    value=1
+                ),
+                manage_commands.create_choice(
+                    name="Week",
+                    value=7
+                ),
+                manage_commands.create_choice(
+                    name="Month",
+                    value=30
+                ),
+                manage_commands.create_choice(
+                    name="Year",
+                    value=365
+                ),
+                manage_commands.create_choice(
+                    name="No Limit",
+                    value=99999
+                )
+            ]
+        ),
+        manage_commands.create_option(
+            name="min_age",
+            description="Minimum age (default No Limit)",
+            required=False,
+            option_type=4,
+            choices=[
+                manage_commands.create_choice(
+                    name="Day",
+                    value=1
+                ),
+                manage_commands.create_choice(
+                    name="Week",
+                    value=7
+                ),
+                manage_commands.create_choice(
+                    name="Month",
+                    value=30
+                ),
+                manage_commands.create_choice(
+                    name="Year",
+                    value=365
+                ),
+                manage_commands.create_choice(
+                    name="No Limit",
+                    value=0
+                )
+            ]
+        ),
+        manage_commands.create_option(
+            name="difficulty",
+            description="Difficulty (default No Limit)",
+            required=False,
+            option_type=4,
+            choices=[
+                manage_commands.create_choice(
+                    name="Very Easy",
+                    value=1
+                ),
+                manage_commands.create_choice(
+                    name="Easy",
+                    value=2
+                ),
+                manage_commands.create_choice(
+                    name="Average",
+                    value=3
+                ),
+                manage_commands.create_choice(
+                    name="Hard",
+                    value=4
+                ),
+                manage_commands.create_choice(
+                    name="Very Hard",
+                    value=5
+                ),
+                manage_commands.create_choice(
+                    name="Unrated",
+                    value=0
+                ),
+                manage_commands.create_choice(
+                    name="No Limit",
+                    value=-1
+                )
+            ]
+        ),
+        manage_commands.create_option(
+            name="order_by",
+            description="Order in which results will be displayed",
+            required=False,
+            option_type=3,
+            choices=[
+                manage_commands.create_choice(
+                    name="Difficulty (Low -> High)",
+                    value="difficulty_asc"
+                ),
+                manage_commands.create_choice(
+                    name="Difficulty (High -> Low)",
+                    value="difficulty_desc"
+                ),
+                manage_commands.create_choice(
+                    name="Raw 👍⭐🌟 rating (Low -> High)",
+                    value="rating_raw_asc"
+                ),
+                manage_commands.create_choice(
+                    name="Raw 👍⭐🌟 rating (High -> Low)",
+                    value="rating_raw_desc"
+                ),
+                manage_commands.create_choice(
+                    name="Avg 👍⭐🌟 rating (Low -> High)",
+                    value="rating_avg_asc"
+                ),
+                manage_commands.create_choice(
+                    name="Avg 👍⭐🌟 rating (High -> Low)",
+                    value="rating_avg_desc"
+                ),
+                manage_commands.create_choice(
+                    name="Reaction count (Low -> High)",
+                    value="reaction_count_asc"
+                ),
+                manage_commands.create_choice(
+                    name="Reaction count (High -> Low)",
+                    value="reaction_count_desc"
+                ),
+                manage_commands.create_choice(
+                    name="🌈 Beautiful theme (High -> Low)",
+                    value="beautifultheme_desc"
+                ),
+                manage_commands.create_choice(
+                    name="❄️ Beautiful logic (High -> Low)",
+                    value="beautifullogic_desc"
+                ),
+                manage_commands.create_choice(
+                    name="💡 Inventive (High -> Low)",
+                    value="inventivepuzzle_desc"
+                ),
+                manage_commands.create_choice(
+                    name="🤯 Mindblowing (High -> Low)",
+                    value="mindblowingpuzzle_desc"
+                ),
+                manage_commands.create_choice(
+                    name="Age (Newest -> Oldest)",
+                    value="age_desc"
+                ),
+                manage_commands.create_choice(
+                    name="Age (Oldest -> Newest)",
+                    value="age_asc"
+                ),
+            ],
+        ),
+
+        manage_commands.create_option(
+            name="search_terms",
+            description="Words that are required to exist on first line of the puzzle post",
+            required=False,
+            option_type=3
+        ),
+    ]
+)
+'''
+async def _searcharchive(ctx: SlashContext, archive_name: str, max_age: int = 99999, min_age: int = 0, difficulty: int = -1, order_by: str = "age_desc", search_terms: str = ""):
+
+    send_channel = ctx.author.dm_channel
+    if (send_channel is None):
+        send_channel = await ctx.author.create_dm()
+
+    await ctx.reply("I'm searching for puzzles, please check your DMs for details",hidden=True)
+    
+    #use max_age and min_age to determine from_date and to_date
+    today = datetime.datetime.today().date()
+    from_date = datetime.datetime(today.year, today.month, today.day) - datetime.timedelta(days = max_age)
+    to_date = datetime.datetime(today.year, today.month, today.day) - datetime.timedelta(days = min_age)
+
+    min_difficulty = difficulty
+    max_difficulty = difficulty
+    if difficulty == -1: #No Limit
+        min_difficulty = 0
+        max_difficulty = 5
+
+    order_by_field = order_by.split("_")[0]
+    order_by_direction = order_by.split("_")[1]
+
+    response = await searchArchive(archive_name = archive_name,
+                                    from_date = from_date,
+                                    to_date = to_date,
+                                    min_difficulty = min_difficulty,
+                                    max_difficulty = max_difficulty,
+                                    min_rating_raw = 0,
+                                    max_rating_raw = 99999,
+                                    min_rating_avg = 0,
+                                    max_rating_avg = 3,
+                                    order_by = order_by_field,
+                                    sort_order = order_by_direction,
+                                    search_terms = search_terms.split(),
+                                    replytitle = "",
+                                    max_results = 100,
+                                    author = ctx.author.name,
+                                    command_message = "/searcharchive archive_name: " + archive_name + " max_age: " + str(max_age) + " min_age: " + str(min_age) + " difficulty: " + str(difficulty) + " order_by: " + order_by + ' search_terms:"'+search_terms+'"')
+
+    await send_channel.send(embed = response)
+
+async def searchArchive(archive_name, max_results, from_date, to_date, min_difficulty, max_difficulty, 
+                        min_rating_raw, max_rating_raw, min_rating_avg, max_rating_avg, 
+                        order_by, sort_order, search_terms, replytitle, author, command_message):
+    
+    query = "SELECT top "+str(max_results)+" * FROM c where "
+    conditions = []
+    parameters = []
+
+    #archive_name (one of "Archive" or "Monthly_Archive")
+    channel_id = 0
+    if archive_name == "Archive":
+        conditions.append("c.source = 'Archive'")
+        channel_id = archive_channel_id
+    elif archive_name == "Monthly_Archive":
+        conditions.append("c.source = 'Monthly_Archive'")
+        channel_id = monthly_archive_channel_id
+    else:
+        print("invalid source: "+archive_name)
+        return
+
+    #   from_date (in format "dd.Month.YYYY", e.g. "21.June.2018").  Dates in UTC.
+    if (from_date > datetime.datetime(2020,1,1)):
+        from_date_ts = pytz.utc.localize(from_date).timestamp()  
+        conditions.append("c.timestamp > "+str(from_date_ts))
+
+    #   to_date, same format as above.  Inclusive, i.e. search results are from beginning of from_date to end of to_date.
+    to_date += datetime.timedelta(days= 1)
+    if (to_date < datetime.datetime.now()):
+        to_date_ts = pytz.utc.localize(to_date).timestamp()  
+        conditions.append("c.timestamp < "+str(to_date_ts))
+
+    #   min_difficulty integer 0-5
+    if (min_difficulty > 0):
+        conditions.append("c.difficulty >= "+str(min_difficulty))
+
+    #   max_difficulty integer 0-5 (e.g. 2 would give results with ratings up to 2.99999)
+    if (max_difficulty < 5):
+        conditions.append("c.difficulty < "+str(max_difficulty+1))
+
+    #   min_rating_raw integer 0+  (e.g. 2 would give results rated 2 or higher)  Raw rating gives 1 point for goodpuzzle, 2 for greatpuzzle, 3 for exceptionalpuzzle.  No upper limit.
+    if (min_rating_raw > 0):
+        conditions.append("c.rating_raw >= "+str(min_rating_raw))
+
+    #   max_rating_raw integer 0+  (e.g. 4 would give results with ratings from 0 to 4)
+    conditions.append("c.rating_raw <= "+str(max_rating_raw))
+
+    #   min_rating_avg integer 0-3 (e.g. 2 would give results rated 2 or higher)  Avg rating gives 1 point for goodpuzzle, 2 for greatpuzzle, 3 for exceptionalpuzzle, then averages based on the number of votes.
+    if (min_rating_avg > 0):
+        conditions.append("c.rating_avg >= "+str(min_rating_avg))
+
+    #   max_rating_avg integer 0-3 (e.g. 1 would give results with ratings from 0 to 1)
+    if (max_rating_avg < 3):
+        conditions.append("c.rating_avg < "+str(max_rating_avg+1))
+
+    #   search_terms (zero or more words that must exist in first line of puzzle submission - can include tags, author, etc.)
+    #   title (zero or more words that will appear as the title of the embedded results.)
+    for idx,word in enumerate(search_terms):
+        conditions.append("contains(c.firstline,@s"+str(idx)+",true)")
+        parameters.append({ "name":"@s"+str(idx), "value": word })
+
+    query += " and ".join(conditions)
+
+    #   order_by (one of "difficulty","rating_avg","rating_raw","reaction_count","beautifultheme","beautifullogic","inventivepuzzle","mindblowingpuzzle","age")
+    if order_by.lower() in ("difficulty","rating_avg","rating_raw","reaction_count","beautifultheme","beautifullogic","inventivepuzzle","mindblowingpuzzle"):
+        query += " order by c."+order_by
+    elif order_by.lower() == "age":
+        query += " order by c.timestamp"
+    else:
+        print("invalid order_by: "+order_by)
+        return
+
+    #   sort_order (one of "asc", "desc")
+    if sort_order.lower() in ("asc", "desc"):
+        query += " "+sort_order
+    else:
+        print("invalid sort_order: "+sort_order)
+        return
+
+    print(query)
+    print(parameters)
+
+    items_container = db_items()
+    items = list(items_container.query_items(
+        query=query,
+        parameters=parameters,
+        enable_cross_partition_query=True
+    ))
+
+    request_charge = items_container.client_connection.last_response_headers['x-ms-request-charge']
+
+    print('Query returned {0} items. Operation consumed {1} request units'.format(len(items), request_charge))
+
+    replymsg=""
+    for item in items:
+        #print (item)
+        replymsg+="\n• [" + item['firstline'] + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ") by "+str(item['author']) + \
+            "  **" + emojify(str(round(item['difficulty'],1)).rstrip("0").rstrip("."))+"**"
+        if (item['goodpuzzle']>0):
+            replymsg+="⠀👍"+str(item['goodpuzzle'])
+        if (item['greatpuzzle']>0):
+            replymsg+="⠀⭐"+str(item['greatpuzzle'])
+        if (item['exceptionalpuzzle']>0):
+            replymsg+="⠀🌟"+str(item['exceptionalpuzzle'])
+        if (item['beautifultheme']>0):
+            replymsg+="⠀🌈"+str(item['beautifultheme'])
+        if (item['beautifullogic']>0):
+            replymsg+="⠀❄️"+str(item['beautifullogic'])
+        if (item['inventivepuzzle']>0):
+            replymsg+="⠀💡"+str(item['inventivepuzzle'])
+        if (item['mindblowingpuzzle']>0):
+            replymsg+="⠀🤯"+str(item['mindblowingpuzzle'])
+
+    if len(items) == 0:
+        replytitle = "No results found for the given parameters."
+    elif replytitle == "":
+        replytitle = "Found "+str(len(items))+" puzzles matching your criteria"
+
+    embed = discord.Embed(title = replytitle)
+    embed.description = replymsg 
+    #todo: handle overflow and put "...and X more" in footer.  
+    #todo: put full parameter list (looking like slash commands) in footer.
+
+    await logUsage(author, len(items), command_message)
+
+    return embed
+
+
 @bot.listen()
 async def on_message(message):
     #check for archive numbers incrementing properly.
@@ -216,11 +573,14 @@ async def on_message(message):
     #print(message.author.id)
     #if it mentions me, process like a command.
     if (bot.user in message.mentions and bot.user != message.author):
-        args = message.content.split()
-        if (message.author.id == calling_bot_id and args[1]=="echo"):
+        send_channel = message.channel
+        if (message.author.id != calling_bot_id):
             send_channel = message.author.dm_channel
             if (send_channel is None):
                 send_channel = await message.author.create_dm()
+                
+        args = message.content.split()
+        if (message.author.id == calling_bot_id and args[1]=="echo"):
 
             await message.channel.send(embed=discord.Embed(description=message.content))
 
@@ -262,6 +622,40 @@ async def on_message(message):
                     response = await findLonelyPuzzles(puzzle_type, ' '.join(search_terms),max_age,solved_count,"updating pins")
                     await msg.edit(embed = response)
             return
+        elif (message.author.id == calling_bot_id and args[1]=="downloaddb"):
+
+            fields = [
+                "id",
+                "source",
+                "timestamp",
+                "difficulty_1",
+                "difficulty_2",
+                "difficulty_3",
+                "difficulty_4",
+                "difficulty_5",
+                "difficulty",
+                "goodpuzzle",
+                "greatpuzzle",
+                "exceptionalpuzzle",
+                "rating_raw",
+                "rating_avg",
+                "beautifultheme",
+                "beautifullogic",
+                "inventivepuzzle",
+                "mindblowingpuzzle",
+                "author",
+                "firstline",
+            ]
+            myCSV = ",".join(fields)
+            
+            for item in db_items().query_items(
+                query="select * from c",
+                enable_cross_partition_query=True
+            ):
+                myCSV += "\n"
+                for field in fields:
+                    myCSV += str(item[field])+","
+            await message.channel.send("Here you go",files=[discord.File(io.StringIO(myCSV),"PuzzleDigest_"+str(datetime.datetime.now())+".csv")])
         elif (message.author.id == calling_bot_id and len(args)==5 and args[1]=="updatedb"):
             #updates DB stats for archive and monthly archive, based on from_date and to_date.
             #requires channel (one of "Archive","Monthly_Archive"), from_date (in format "dd.Month.YYYY", e.g. "21.June.2018"), to_date.  
@@ -278,8 +672,12 @@ async def on_message(message):
 
             from_date = datetime.datetime.strptime(args[3], "%d.%B.%Y")
             to_date = datetime.datetime.strptime(args[4], "%d.%B.%Y") + datetime.timedelta(days= 1)
-            async for msg in bot.get_channel(channel_id).history(after=from_date,before=to_date,limit=None):
+            
+            print(str(datetime.datetime.now().time())+ ": Getting and processing messages:",end="")
+            puzzcount = 0
 
+            async for msg in bot.get_channel(channel_id).history(after=from_date,before=to_date,limit=None):
+                print(".",end="")
                 difficulty_1 = 0
                 difficulty_2 = 0
                 difficulty_3 = 0
@@ -374,13 +772,17 @@ async def on_message(message):
                         }
                     #from pprint import pprint
                     #pprint(puzzlemessage)
+                    puzzcount += 1
                     db_items().upsert_item(body=puzzlemessage)
+
+            print("\n"+str(datetime.datetime.now().time())+ ": Uploaded "+str(puzzcount)+" puzzles")
+                
             return
-        elif (len(args)>=14 and args[1]=="search"):
+        elif (len(args)>=14 and args[1]=="searcharchive"):
             # searches archives for puzzles fitting the criteria.  
-            # e.g. Top ten mindblowing tapas of all time "@PuzzleDigestBot search Archive 21.June.2000 1.December.2021 0 5 0 99999 0 3 mindblowingpuzzle desc 10 he title=Show Me"
+            # e.g. Top ten mindblowing tapas of all time "@PuzzleDigestBot search Archive 21.June.2000 1.December.2021 0 5 0 99999 0 3 mindblowingpuzzle desc 10 tapa title=Show Me"
             # Parameters:
-            #   source (one of "Archive" or "Monthly_Archive")
+            #   archive_name (one of "Archive" or "Monthly_Archive")
             #   from_date (in format "dd.Month.YYYY", e.g. "21.June.2018").  Dates in UTC.
             #   to_date, same format as above.  Inclusive, i.e. search results are from beginning of from_date to end of to_date.
             #   min_difficulty integer 0-5
@@ -389,73 +791,13 @@ async def on_message(message):
             #   max_rating_raw integer 0+  (e.g. 4 would give results with ratings up to 4)
             #   min_rating_avg integer 0-3 (e.g. 2 would give results rated 2 or higher)  Avg rating gives 1 point for goodpuzzle, 2 for greatpuzzle, 3 for exceptionalpuzzle, then averages based on the number of votes.
             #   max_rating_avg integer 0-3 (e.g. 1 would give results with ratings up to 1.99999)
-            #   order_by (one of "difficulty","rating_avg","rating_raw","reaction_count","beautifultheme","beautifullogic","inventivepuzzle","mindblowingpuzzle")
+            #   order_by (one of "difficulty","rating_avg","rating_raw","reaction_count","beautifultheme","beautifullogic","inventivepuzzle","mindblowingpuzzle","age")
             #   sort_order (one of "asc", "desc")
             #   max_results integer
             #   search_terms (zero or more words that must exist in first line of puzzle submission - can include tags, author, etc.)
             #   title (zero or more words that will appear as the title of the embedded results.  This parameter alone must be preceded by its name: e.g. "title=Show Me")
 
-            max_results = int(args[13])
-            query = "SELECT top "+str(max_results)+" * FROM c where "
-            conditions = []
-            parameters = []
-
-            #source (one of "Archive" or "Monthly_Archive")
-            source = args[2]
-            channel_id = 0
-            if source == "Archive":
-                conditions.append("c.source = 'Archive'")
-                channel_id = archive_channel_id
-            elif source == "Monthly_Archive":
-                conditions.append("c.source = 'Monthly_Archive'")
-                channel_id = monthly_archive_channel_id
-            else:
-                print("invalid source: "+args[2])
-                return
-
-            #   from_date (in format "dd.Month.YYYY", e.g. "21.June.2018").  Dates in UTC.
-            from_date = datetime.datetime.strptime(args[3], "%d.%B.%Y")
-            if (from_date > datetime.datetime(2021,1,1)):
-                from_date_ts = pytz.utc.localize(from_date).timestamp()  
-                conditions.append("c.timestamp > "+str(from_date_ts))
-
-            #   to_date, same format as above.  Inclusive, i.e. search results are from beginning of from_date to end of to_date.
-            to_date = datetime.datetime.strptime(args[4], "%d.%B.%Y") + datetime.timedelta(days= 1)
-            if (to_date < datetime.datetime.now()):
-                to_date_ts = pytz.utc.localize(to_date).timestamp()  
-                conditions.append("c.timestamp < "+str(to_date_ts))
-
-            #   min_difficulty integer 0-5
-            min_difficulty = int(args[5])
-            if (min_difficulty > 0):
-                conditions.append("c.difficulty >= "+str(min_difficulty))
-
-            #   max_difficulty integer 0-5 (e.g. 2 would give results with ratings up to 2.99999)
-            max_difficulty = int(args[6])
-            if (max_difficulty < 5):
-                conditions.append("c.difficulty < "+str(max_difficulty+1))
-
-            #   min_rating_raw integer 0+  (e.g. 2 would give results rated 2 or higher)  Raw rating gives 1 point for goodpuzzle, 2 for greatpuzzle, 3 for exceptionalpuzzle.  No upper limit.
-            min_rating_raw = int(args[7])
-            if (min_rating_raw > 0):
-                conditions.append("c.rating_raw >= "+str(min_rating_raw))
-
-            #   max_rating_raw integer 0+  (e.g. 4 would give results with ratings from 0 to 4)
-            max_rating_raw = int(args[8])
-            conditions.append("c.rating_raw <= "+str(max_rating_raw))
-
-            #   min_rating_avg integer 0-3 (e.g. 2 would give results rated 2 or higher)  Avg rating gives 1 point for goodpuzzle, 2 for greatpuzzle, 3 for exceptionalpuzzle, then averages based on the number of votes.
-            min_rating_avg = int(args[9])
-            if (min_rating_avg > 0):
-                conditions.append("c.rating_avg >= "+str(min_rating_avg))
-
-            #   max_rating_avg integer 0-3 (e.g. 1 would give results with ratings from 0 to 1)
-            max_rating_avg = int(args[10])
-            if (max_rating_avg > 0):
-                conditions.append("c.rating_avg < "+str(max_rating_avg+1))
-
-            #   search_terms (zero or more words that must exist in first line of puzzle submission - can include tags, author, etc.)
-            #   title (zero or more words that will appear as the title of the embedded results.)
+            search_terms = []
             replytitle = ""
             found_title = False
             for idx,word in enumerate(args[14:]):
@@ -464,89 +806,31 @@ async def on_message(message):
                         found_title = True
                         replytitle += word.lstrip("title=")
                     else:
-                        conditions.append("contains(c.firstline,@s"+str(idx)+",true)")
-                        parameters.append({ "name":"@s"+str(idx), "value": word })
+                        search_terms.append(word)
                 else:
                     replytitle += " "+word
 
-            query += " and ".join(conditions)
+            response = await searchArchive(archive_name = args[2],
+                                            from_date = datetime.datetime.strptime(args[3], "%d.%B.%Y"),
+                                            to_date = datetime.datetime.strptime(args[4], "%d.%B.%Y") ,
+                                            min_difficulty = int(args[5]),
+                                            max_difficulty = int(args[6]),
+                                            min_rating_raw = int(args[7]),
+                                            max_rating_raw = int(args[8]),
+                                            min_rating_avg = int(args[9]),
+                                            max_rating_avg = int(args[10]),
+                                            order_by = args[11],
+                                            sort_order = args[12],
+                                            search_terms = search_terms,
+                                            replytitle = replytitle,
+                                            max_results = int(args[13]),
+                                            author = message.author.name,
+                                            command_message = " ".join(args[1:]))
 
-            #   order_by (one of "difficulty","rating_avg","rating_raw","reaction_count","beautifultheme","beautifullogic","inventivepuzzle","mindblowingpuzzle")
-            order_by = args[11]
-            if order_by.lower() in ("difficulty","rating_avg","rating_raw","reaction_count","beautifultheme","beautifullogic","inventivepuzzle","mindblowingpuzzle"):
-                query += " order by c."+order_by
-            else:
-                print("invalid order_by: "+order_by)
-                return
-
-            #   sort_order (one of "asc", "desc")
-            sort_order = args[12]
-            if sort_order.lower() in ("asc", "desc"):
-                query += " "+sort_order
-            else:
-                print("invalid sort_order: "+sort_order)
-                return
-
-            print(query)
-            print(parameters)
-
-            items_container = db_items()
-            items = list(items_container.query_items(
-                query=query,
-                parameters=parameters,
-                enable_cross_partition_query=True
-            ))
-
-            request_charge = items_container.client_connection.last_response_headers['x-ms-request-charge']
-
-            print('Query returned {0} items. Operation consumed {1} request units'.format(len(items), request_charge))
-
-            #reply in DM (or if calling bot, in channel.)
-            send_channel = message.channel
-            if (message.author.id != calling_bot_id):
-                send_channel = message.author.dm_channel
-                if (send_channel is None):
-                    send_channel = await message.author.create_dm()
-
-            replymsg=""
-            for item in items:
-                #print (item)
-                replymsg+="\n• [" + item['firstline'] + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ") by "+str(item['author']) + \
-                    "  **" + emojify(str(round(item['difficulty'],1)).rstrip("0").rstrip("."))+"**"
-                if (item['goodpuzzle']>0):
-                    replymsg+="⠀👍"+str(item['goodpuzzle'])
-                if (item['greatpuzzle']>0):
-                    replymsg+="⠀⭐"+str(item['greatpuzzle'])
-                if (item['exceptionalpuzzle']>0):
-                    replymsg+="⠀🌟"+str(item['exceptionalpuzzle'])
-                if (item['beautifultheme']>0):
-                    replymsg+="⠀🌈"+str(item['beautifultheme'])
-                if (item['beautifullogic']>0):
-                    replymsg+="⠀❄️"+str(item['beautifullogic'])
-                if (item['inventivepuzzle']>0):
-                    replymsg+="⠀💡"+str(item['inventivepuzzle'])
-                if (item['mindblowingpuzzle']>0):
-                    replymsg+="⠀🤯"+str(item['mindblowingpuzzle'])
-
-            if len(items) == 0:
-                replytitle = "No results found for the given parameters."
-            elif replytitle == "":
-                replytitle = "Found top "+str(len(items))+" puzzles using '"+" ".join(args[1:])+"'"
-
-            embed = discord.Embed(title = replytitle)
-            embed.description = replymsg 
-
-            await send_channel.send(embed = embed)
-            await logUsage(message.author.name, len(items), " ".join(args[1:]))
+            await send_channel.send(embed = response)
 
             return
         else:
-            send_channel = message.channel
-            if (message.author.id != calling_bot_id):
-                send_channel = message.author.dm_channel
-                if (send_channel is None):
-                    send_channel = await message.author.create_dm()
-
             helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku', 'word', or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
 
             if len(args) > 4:
