@@ -1,2 +1,1 @@
-counter: python3 secrets.py
-worker: python3 SearchReactions.py
+worker: python3 SearchReactions.py & python3 secrets.py
