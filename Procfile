@@ -1,1 +1,1 @@
-worker: python3 SearchReactions.py & python3 Secrets.py & wait -n
+worker: python3 SearchReactions.py
