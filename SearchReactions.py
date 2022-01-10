@@ -420,6 +420,10 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
 
     replymsg=""
 
+    if (len(items)==0):
+        replymsg = "No results found for the given parameters."
+    replyfooter = ""
+
     difficulty_str = ""
     if (min_difficulty == 0 and max_difficulty == 5):
         difficulty_str = param_dicts_difficulty[-1]
@@ -427,17 +431,13 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
         difficulty_str = param_dicts_difficulty[min_difficulty]
     else:
         difficulty_str = param_dicts_difficulty[min_difficulty] + " - " + param_dicts_difficulty[max_difficulty]
-    replymsg = "Search Parameters: " + \
+    pseudofooter = "\n\nSearch Parameters: " + \
     "Archive_name = " + param_dicts_archive_name[archive_name]+ \
     ", \nDate = " + from_date.strftime("%d %B %Y") +" - " +to_date.strftime("%d %B %Y")+ \
     ", \nDifficulty = " + difficulty_str + \
-    (', \nSearch Terms = "' + ' '.join(search_terms) + '"' if len(search_terms)>0 else "") 
+    (', \nSearch Terms = "' + ' '.join(search_terms) + '"' if len(search_terms)>0 else "") + \
+    "\n\nCurious?  Check out [how to search the archive](https://www.google.com)"
     
-    if (len(items)==0):
-        replymsg = "No results found for the given parameters."
-    pseudofooter = "\n\nCurious?  Check out [how to search the archive](https://www.google.com)"
-    replyfooter = ""
-
     idx = 0
     for item in items:
         idx += 1
