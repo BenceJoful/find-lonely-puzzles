@@ -6,14 +6,9 @@ todo:
     minimum age (0 days default?)
     on update, make title include "updated Nov 15 11:99pm"
     search my submitted puzzles.
-    on seach puzzles, don't include puzzles I've already solved.
-        #exclude_solved (one of "True", "False". If "True", automatically removes results that the queryer has reacted to with a difficulty or rating.  Will slow down search results.)
     GAS and GAPP stats? 
 
-
     allow pinning and updating pins for archive search.
-        display relevant portions in slash-command style language in footer?
-    in search, ensure we don't go over the character limit.
 '''
 
 import os
@@ -30,6 +25,7 @@ from azure.cosmos import CosmosClient
 
 try:
     access_token= os.environ["ACCESS_TOKEN"]
+    other_access_token= os.environ["OTHER_ACCESS_TOKEN"]
     guild_id = os.environ["GUILD_ID"]
     sudoku_submissions_channel_id = int(os.environ["SUDOKU_SUBMISSIONS_CHANNEL_ID"])
     other_submissions_channel_id = int(os.environ["OTHER_SUBMISSIONS_CHANNEL_ID"])
@@ -52,6 +48,7 @@ except:
     config = configparser.ConfigParser()
     config.read('localconfig.ini')
     access_token = config['db']['ACCESS_TOKEN']
+    other_access_token= config['db']["OTHER_ACCESS_TOKEN"]
     guild_id = config['db']['GUILD_ID']
     sudoku_submissions_channel_id = int(config['db']['SUDOKU_SUBMISSIONS_CHANNEL_ID'])
     other_submissions_channel_id = int(config['db']['OTHER_SUBMISSIONS_CHANNEL_ID'])
@@ -109,7 +106,7 @@ def emojify(text):
     return returntxt
     
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default(),help_command=None)
-slash = SlashCommand(bot, sync_commands=True,debug_guild=guild_id)
+slash = SlashCommand(bot, sync_commands=True, debug_guild=guild_id)
 
 @slash.slash(
     name="lonelypuzzles", description="Search for puzzles which need testing", 
@@ -188,6 +185,58 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
         response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count)
         await ctx.send(embed = response)'''
 
+param_dicts_archive_name = {
+        "Archive":"Archive",
+        "Monthly_Archive":"Monthly Archive",
+}
+param_dicts_max_age = {
+        1:"Day",
+        7:"Week",
+        30:"Month",
+        365:"Year",
+        99999:"No Limit",
+}
+param_dicts_min_age = {
+        1:"Day",
+        7:"Week",
+        30:"Month",
+        365:"Year",
+        0:"No Limit",
+}
+param_dicts_difficulty = {
+        1:"Very Easy",
+        2:"Easy",
+        3:"Average",
+        4:"Hard",
+        5:"Very Hard",
+        0:"Unrated",
+        -1:"No Limit",
+}
+param_dicts_order_by = {
+        "difficulty_asc":"Difficulty (Low -> High)",
+        "difficulty_desc":"Difficulty (High -> Low)",
+        "rating_raw_asc":"Raw 👍⭐🌟 rating (Low -> High)",
+        "rating_raw_desc":"Raw 👍⭐🌟 rating (High -> Low)",
+        "rating_avg_asc":"Avg 👍⭐🌟 rating (Low -> High)",
+        "rating_avg_desc":"Avg 👍⭐🌟 rating (High -> Low)",
+        "reaction_count_asc":"Reaction count (Low -> High)",
+        "reaction_count_desc":"Reaction count (High -> Low)",
+        "beautifultheme_desc":"🌈 Beautiful theme (High -> Low)",
+        "beautifullogic_desc":"❄️ Beautiful logic (High -> Low)",
+        "inventivepuzzle_desc":"💡 Inventive (High -> Low)",
+        "mindblowingpuzzle_desc":"🤯 Mindblowing (High -> Low)",
+        "age_desc":"Age (Newest -> Oldest)",
+        "age_asc":"Age (Oldest -> Newest)",
+}
+
+def list_params(param_dict):
+    l = []
+    for key in param_dict:
+        l.append(manage_commands.create_choice(
+            name=param_dict[key],
+            value=key
+        ))
+    return l
 '''
 @slash.slash(
     name="searcharchive", description="Search for puzzles in the Archive or Monthly Archive on various criteria", 
@@ -197,16 +246,7 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
             description="Archive Name",
             required=True,
             option_type=3,
-            choices=[
-                manage_commands.create_choice(
-                    name="Archive",
-                    value="Archive"
-                ),
-                manage_commands.create_choice(
-                    name="Monthly Archive",
-                    value="Monthly_Archive"
-                )
-            ],
+            choices=list_params(param_dicts_archive_name)
         ),
 
         manage_commands.create_option(
@@ -214,156 +254,28 @@ async def lonelypuzzles(ctx,puzzle_type: str, search_terms: str = "", max_age: i
             description="Maximum age (default No Limit)",
             required=False,
             option_type=4,
-            choices=[
-                manage_commands.create_choice(
-                    name="Day",
-                    value=1
-                ),
-                manage_commands.create_choice(
-                    name="Week",
-                    value=7
-                ),
-                manage_commands.create_choice(
-                    name="Month",
-                    value=30
-                ),
-                manage_commands.create_choice(
-                    name="Year",
-                    value=365
-                ),
-                manage_commands.create_choice(
-                    name="No Limit",
-                    value=99999
-                )
-            ]
+            choices=list_params(param_dicts_max_age)
         ),
         manage_commands.create_option(
             name="min_age",
             description="Minimum age (default No Limit)",
             required=False,
             option_type=4,
-            choices=[
-                manage_commands.create_choice(
-                    name="Day",
-                    value=1
-                ),
-                manage_commands.create_choice(
-                    name="Week",
-                    value=7
-                ),
-                manage_commands.create_choice(
-                    name="Month",
-                    value=30
-                ),
-                manage_commands.create_choice(
-                    name="Year",
-                    value=365
-                ),
-                manage_commands.create_choice(
-                    name="No Limit",
-                    value=0
-                )
-            ]
+            choices=list_params(param_dicts_min_age)
         ),
         manage_commands.create_option(
             name="difficulty",
             description="Difficulty (default No Limit)",
             required=False,
             option_type=4,
-            choices=[
-                manage_commands.create_choice(
-                    name="Very Easy",
-                    value=1
-                ),
-                manage_commands.create_choice(
-                    name="Easy",
-                    value=2
-                ),
-                manage_commands.create_choice(
-                    name="Average",
-                    value=3
-                ),
-                manage_commands.create_choice(
-                    name="Hard",
-                    value=4
-                ),
-                manage_commands.create_choice(
-                    name="Very Hard",
-                    value=5
-                ),
-                manage_commands.create_choice(
-                    name="Unrated",
-                    value=0
-                ),
-                manage_commands.create_choice(
-                    name="No Limit",
-                    value=-1
-                )
-            ]
+            choices=list_params(param_dicts_difficulty)
         ),
         manage_commands.create_option(
             name="order_by",
-            description="Order in which results will be displayed",
+            description="Order in which results will be displayed (default Age: Newest -> Oldest)",
             required=False,
             option_type=3,
-            choices=[
-                manage_commands.create_choice(
-                    name="Difficulty (Low -> High)",
-                    value="difficulty_asc"
-                ),
-                manage_commands.create_choice(
-                    name="Difficulty (High -> Low)",
-                    value="difficulty_desc"
-                ),
-                manage_commands.create_choice(
-                    name="Raw 👍⭐🌟 rating (Low -> High)",
-                    value="rating_raw_asc"
-                ),
-                manage_commands.create_choice(
-                    name="Raw 👍⭐🌟 rating (High -> Low)",
-                    value="rating_raw_desc"
-                ),
-                manage_commands.create_choice(
-                    name="Avg 👍⭐🌟 rating (Low -> High)",
-                    value="rating_avg_asc"
-                ),
-                manage_commands.create_choice(
-                    name="Avg 👍⭐🌟 rating (High -> Low)",
-                    value="rating_avg_desc"
-                ),
-                manage_commands.create_choice(
-                    name="Reaction count (Low -> High)",
-                    value="reaction_count_asc"
-                ),
-                manage_commands.create_choice(
-                    name="Reaction count (High -> Low)",
-                    value="reaction_count_desc"
-                ),
-                manage_commands.create_choice(
-                    name="🌈 Beautiful theme (High -> Low)",
-                    value="beautifultheme_desc"
-                ),
-                manage_commands.create_choice(
-                    name="❄️ Beautiful logic (High -> Low)",
-                    value="beautifullogic_desc"
-                ),
-                manage_commands.create_choice(
-                    name="💡 Inventive (High -> Low)",
-                    value="inventivepuzzle_desc"
-                ),
-                manage_commands.create_choice(
-                    name="🤯 Mindblowing (High -> Low)",
-                    value="mindblowingpuzzle_desc"
-                ),
-                manage_commands.create_choice(
-                    name="Age (Newest -> Oldest)",
-                    value="age_desc"
-                ),
-                manage_commands.create_choice(
-                    name="Age (Oldest -> Newest)",
-                    value="age_asc"
-                ),
-            ],
+            choices= list_params(param_dicts_order_by),
         ),
 
         manage_commands.create_option(
@@ -419,7 +331,6 @@ async def _searcharchive(ctx: SlashContext, archive_name: str, max_age: int = 99
 async def searchArchive(archive_name, max_results, from_date, to_date, min_difficulty, max_difficulty, 
                         min_rating_raw, max_rating_raw, min_rating_avg, max_rating_avg, 
                         order_by, sort_order, search_terms, replytitle, author, command_message):
-    
     query = "SELECT top "+str(max_results)+" * FROM c where "
     conditions = []
     parameters = []
@@ -494,8 +405,8 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
         print("invalid sort_order: "+sort_order)
         return
 
-    print(query)
-    print(parameters)
+    #print(query)
+    #print(parameters)
 
     items_container = db_items()
     items = list(items_container.query_items(
@@ -504,11 +415,29 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
         enable_cross_partition_query=True
     ))
 
-    request_charge = items_container.client_connection.last_response_headers['x-ms-request-charge']
-
-    print('Query returned {0} items. Operation consumed {1} request units'.format(len(items), request_charge))
+    #request_charge = items_container.client_connection.last_response_headers['x-ms-request-charge']
+    #print('Query returned {0} items. Operation consumed {1} request units'.format(len(items), request_charge))
 
     replymsg=""
+
+    difficulty_str = ""
+    if (min_difficulty == 0 and max_difficulty == 5):
+        difficulty_str = param_dicts_difficulty[-1]
+    elif (min_difficulty == max_difficulty ):
+        difficulty_str = param_dicts_difficulty[min_difficulty]
+    else:
+        difficulty_str = param_dicts_difficulty[min_difficulty] + " - " + param_dicts_difficulty[max_difficulty]
+    replymsg = "Search Parameters: " + \
+    "Archive_name = " + param_dicts_archive_name[archive_name]+ \
+    ", \nDate = " + from_date.strftime("%d %B %Y") +" - " +to_date.strftime("%d %B %Y")+ \
+    ", \nDifficulty = " + difficulty_str + \
+    (', \nSearch Terms = "' + ' '.join(search_terms) + '"' if len(search_terms)>0 else "") 
+    
+    if (len(items)==0):
+        replymsg = "No results found for the given parameters."
+    pseudofooter = "\n\nCurious?  Check out [how to search the archive](https://www.google.com)"
+    replyfooter = ""
+
     idx = 0
     for item in items:
         idx += 1
@@ -521,30 +450,46 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
         if channel_id != archive_channel_id:
             firstline = firstline[:50]
             author = " by "+str(item['author'])
-        replymsg+="\n"+indexer+" [" + firstline + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ")" + author + \
-            "\n⠀⠀**" + emojify(str(round(item['difficulty'],1)))+"**"
-        if (item['goodpuzzle']>0):
-            replymsg+="⠀👍"+str(item['goodpuzzle'])
-        if (item['greatpuzzle']>0):
-            replymsg+="⠀⭐"+str(item['greatpuzzle'])
-        if (item['exceptionalpuzzle']>0):
-            replymsg+="⠀🌟"+str(item['exceptionalpuzzle'])
+        itemmsg ="\n"+indexer+" [" + firstline + "](https://discord.com/channels/"+guild_id+"/"+str(channel_id)+"/" + str(item['id']) + ")" + author + \
+            "\n⠀⠀" + str(round(item['difficulty'],1))+"/5"
+            #"\n⠀⠀**" + emojify(str(round(item['difficulty'],1)))+"**"
+        #if (item['goodpuzzle']>0):
+        #    itemmsg+="⠀👍"+str(item['goodpuzzle'])
+        #if (item['greatpuzzle']>0):
+        #    itemmsg+="⠀⭐"+str(item['greatpuzzle'])
+        #if (item['exceptionalpuzzle']>0):
+        #    itemmsg+="⠀🌟"+str(item['exceptionalpuzzle'])
+        
+        #use average rating to display a star rating, then show how many reacted.
+        star_reacts = str(item['goodpuzzle']+item['greatpuzzle']+item['exceptionalpuzzle'])
+        if (item['rating_avg']>=2.5):
+            itemmsg+="⠀🌟"+star_reacts
+        elif (item['rating_avg']>=1.5):
+            itemmsg+="⠀⭐"+star_reacts
+        elif (item['rating_avg']>=0.5):
+            itemmsg+="⠀👍"+star_reacts
+
         if (item['beautifultheme']>0):
-            replymsg+="⠀🌈"+str(item['beautifultheme'])
+            itemmsg+="⠀🌈"+str(item['beautifultheme'])
         if (item['beautifullogic']>0):
-            replymsg+="⠀❄️"+str(item['beautifullogic'])
+            itemmsg+="⠀❄️"+str(item['beautifullogic'])
         if (item['inventivepuzzle']>0):
-            replymsg+="⠀💡"+str(item['inventivepuzzle'])
+            itemmsg+="⠀💡"+str(item['inventivepuzzle'])
         if (item['mindblowingpuzzle']>0):
-            replymsg+="⠀🤯"+str(item['mindblowingpuzzle'])
+            itemmsg+="⠀🤯"+str(item['mindblowingpuzzle'])
+        if (len(replymsg) + len(itemmsg) + len(pseudofooter) < 4096):
+            replymsg+= itemmsg
+        else:
+            replyfooter = "... and "+str(len(items) - idx)+" more"
+            break
 
-    if len(items) == 0:
-        replytitle = "No results found for the given parameters."
-    elif replytitle == "":
-        replytitle = "Found "+str(len(items))+" puzzles matching your criteria"
-
+    if replytitle == "":
+        replytitle = "Found "+str(len(items))+" puzzles, ordered by "+param_dicts_order_by[order_by+"_"+sort_order]+":"
+            
     embed = discord.Embed(title = replytitle)
-    embed.description = replymsg 
+    embed.description = replymsg + pseudofooter
+    if replyfooter != "":
+        embed.set_footer(text=replyfooter)
     #todo: handle overflow and put "...and X more" in footer.  
     #todo: put full parameter list (looking like slash commands) in footer.
 
@@ -552,9 +497,9 @@ async def searchArchive(archive_name, max_results, from_date, to_date, min_diffi
 
     return embed
 
-
 @bot.listen()
 async def on_message(message):
+
     #check for archive numbers incrementing properly.
     if message.channel.id == archive_channel_id:
         puzzle_id = 0
@@ -597,7 +542,7 @@ async def on_message(message):
             await message.channel.send(embed=discord.Embed(description=message.content))
 
             return
-        if (message.author.id in (developer_id,calling_bot_id) and len(args)==2 and args[1]=="updatepins"):
+        elif (message.author.id in (developer_id,calling_bot_id) and len(args)==2 and args[1]=="updatepins"):
             #updates pins in this channel
             for msg in await message.channel.pins():
                 if (msg.pinned and msg.author == bot.user and len(msg.embeds)>0):
@@ -661,15 +606,18 @@ async def on_message(message):
             ]
             myCSV = ",".join(fields)
             
+            foundPuzzlesCount = 0
             for item in db_items().query_items(
                 query="select * from c order by c.source, c.id",
                 enable_cross_partition_query=True
             ):
+                foundPuzzlesCount += 1
                 myCSV += "\n"
                 for field in fields:
                     myCSV += str(item[field])+","
             
             await message.channel.send("",files=[discord.File(io.StringIO(myCSV),"PuzzleDigest_"+str(datetime.datetime.now())+".csv")])
+            await logUsage(message.author.name, foundPuzzlesCount, "downloaddb")
 
         elif (message.author.id in (developer_id,calling_bot_id) and len(args)==5 and args[1]=="updatedb"):
             #updates DB stats for archive and monthly archive, based on from_date and to_date.
@@ -795,8 +743,7 @@ async def on_message(message):
                     db_items().upsert_item(body=puzzlemessage)
 
             print(str(datetime.datetime.now().time())+ ": Uploaded "+str(puzzcount)+" puzzles")
-            if message.author.id == developer_id:
-                await message.channel.send(embed=discord.Embed(description="Done.  Uploaded "+str(puzzcount)+" puzzles"))
+            await logUsage(message.author.name, puzzcount, " ".join(args[1:]))
 
             return
         elif (len(args)>=14 and args[1]=="searcharchive"):
@@ -954,8 +901,6 @@ async def findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count, auth
 async def on_ready():
     print('{0.user} has logged in'.format(bot))
 
-
-
 async def logUsage(author, found_count, command_message):
     log_channel = await bot.fetch_channel(log_channel_id)
     #get most recent Log message by this bot there.  Either edit it or create new one.
@@ -977,5 +922,8 @@ async def logUsage(author, found_count, command_message):
         await log_message.edit(embed = embed)
         #await log_message.delete()
 
+
+#bot.run(other_access_token)
 bot.run(access_token)
+
 
