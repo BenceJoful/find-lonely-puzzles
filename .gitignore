@@ -1,2 +1,8 @@
 localconfig.ini
 sampledata.json
+.gcloudignore
+SearchReactions.py.bak
+SantaBotHelper.py
+SantaBot.txt
+SantaBot.py
+app.yaml
