@@ -218,14 +218,14 @@ async def ListSantas(ctx: commands.Context):
             for reaction in msg.reactions:
                 if reaction.emoji == "🎁":
                     async for user in reaction.users():
-                        username = user.name + "#" + user.discriminator +", " + str(user.id) + "\n"
+                        username = user.name + "#" + user.discriminator + "\n"
                         if len(userlist[-1]+username) < 4000:
                             userlist[-1] += username
                         else:
                             userlist.append(username)
 
     for i in range(len(userlist)):
-        embed = discord.Embed(title='Santas '+str(i)+"/"+str(len(userlist)))
+        embed = discord.Embed(title='Santas '+str(i+1)+"/"+str(len(userlist)))
         embed.description = userlist[i]
         await ctx.send(embed=embed)
 
