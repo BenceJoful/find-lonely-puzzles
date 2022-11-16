@@ -15,7 +15,6 @@ from discord.ext.commands import CommandNotFound
 
 try:
     access_token= os.environ["ACCESS_TOKEN"]
-    other_access_token= os.environ["OTHER_ACCESS_TOKEN"]
     guild_id = os.environ["GUILD_ID"]
     sudoku_submissions_channel_id = int(os.environ["SUDOKU_SUBMISSIONS_CHANNEL_ID"])
     other_submissions_channel_id = int(os.environ["OTHER_SUBMISSIONS_CHANNEL_ID"])
@@ -38,7 +37,6 @@ except:
     config = configparser.ConfigParser()
     config.read('localconfig.ini')
     access_token = config['db']['ACCESS_TOKEN']
-    other_access_token= config['db']["OTHER_ACCESS_TOKEN"]
     guild_id = config['db']['GUILD_ID']
     sudoku_submissions_channel_id = int(config['db']['SUDOKU_SUBMISSIONS_CHANNEL_ID'])
     other_submissions_channel_id = int(config['db']['OTHER_SUBMISSIONS_CHANNEL_ID'])
