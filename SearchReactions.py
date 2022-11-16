@@ -177,7 +177,6 @@ bot = SantaBot()
 @commands.is_owner()
 async def SendMessages(ctx: commands.Context):
     """Sends DMs to users based on messages created in the database."""
-    #todo: error handling
     try:
         messages_container = db_items("Messages")
         messages = list(messages_container.query_items(
@@ -205,6 +204,30 @@ async def SendMessages(ctx: commands.Context):
 
     except:
         await message_Bence('Error getting messages ', embed=discord.Embed(description=traceback.format_exc()))
+
+@bot.command()
+@commands.is_owner()
+async def ListSantas(ctx: commands.Context):
+    """Lists users who reacted to the message with a gift emoji."""
+    #await ctx.reply("OK, looking them up",ephemeral=True)
+
+    userlist = [""]
+    from_date = datetime.datetime.now() - datetime.timedelta(days=2)
+    async for msg in bot.get_channel(709371089196679230).history(after=from_date,limit=None):
+        if msg.id == 1042119547039264920:
+            for reaction in msg.reactions:
+                if reaction.emoji == "🎁":
+                    async for user in reaction.users():
+                        username = user.name + "#" + user.discriminator +", " + str(user.id) + "\n"
+                        if len(userlist[-1]+username) < 4000:
+                            userlist[-1] += username
+                        else:
+                            userlist.append(username)
+
+    for i in range(len(userlist)):
+        embed = discord.Embed(title='Santas '+str(i)+"/"+str(len(userlist)))
+        embed.description = userlist[i]
+        await ctx.send(embed=embed)
 
 @bot.hybrid_command(
     name="lonelypuzzles", description="Search for puzzles which need testing", 
