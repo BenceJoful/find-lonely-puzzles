@@ -6,7 +6,6 @@ import interactions
 import datetime
 
 import traceback
-
 import os
 import configparser
 
@@ -204,30 +203,6 @@ async def SendMessages(ctx: commands.Context):
 
     except:
         await message_Bence('Error getting messages ', embed=discord.Embed(description=traceback.format_exc()))
-
-@bot.command()
-@commands.is_owner()
-async def ListSantas(ctx: commands.Context):
-    """Lists users who reacted to the message with a gift emoji."""
-    #await ctx.reply("OK, looking them up",ephemeral=True)
-
-    userlist = [""]
-    from_date = datetime.datetime.now() - datetime.timedelta(days=2)
-    async for msg in bot.get_channel(709371089196679230).history(after=from_date,limit=None):
-        if msg.id == 1042119547039264920:
-            for reaction in msg.reactions:
-                if reaction.emoji == "🎁":
-                    async for user in reaction.users():
-                        username = user.name + "#" + user.discriminator + "\n"
-                        if len(userlist[-1]+username) < 4000:
-                            userlist[-1] += username
-                        else:
-                            userlist.append(username)
-
-    for i in range(len(userlist)):
-        embed = discord.Embed(title='Santas '+str(i+1)+"/"+str(len(userlist)))
-        embed.description = userlist[i]
-        await ctx.send(embed=embed)
 
 @bot.hybrid_command(
     name="lonelypuzzles", description="Search for puzzles which need testing", 
@@ -494,32 +469,28 @@ async def on_message(message):
                     response = await findLonelyPuzzles(puzzle_type, ' '.join(search_terms),max_age,solved_count,"updating pins")
                     await msg.edit(embed = response)
             return
-        else:
+        elif (message.author.id in (developer_id,calling_bot_id) and len(args)==2 and args[1]=="lonelypuzzles"):
             helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku', 'word', or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
 
             if len(args) > 4:
-                if args[1] == 'lonelypuzzles':
-                    pass #now handled by the hybrid command
-                    # puzzle_type = args[2]
-                    # max_age = 0
-                    # try:
-                    #     max_age = int(args[3])
-                    # except ValueError:
-                    #     await send_channel.send(embed = discord.Embed(description='max_age is not an integer.\n'+helpmsg))
-                    #     return
+                puzzle_type = args[2]
+                max_age = 0
+                try:
+                    max_age = int(args[3])
+                except ValueError:
+                    await send_channel.send(embed = discord.Embed(description='max_age is not an integer.\n'+helpmsg))
+                    return
 
-                    # solved_count = 0
-                    # try:
-                    #     solved_count = int(args[4])
-                    # except ValueError:
-                    #     await send_channel.send(embed = discord.Embed(description='solved_count is not an integer.\n'+helpmsg))
-                    #     return
+                solved_count = 0
+                try:
+                    solved_count = int(args[4])
+                except ValueError:
+                    await send_channel.send(embed = discord.Embed(description='solved_count is not an integer.\n'+helpmsg))
+                    return
 
-                    # search_terms = " ".join(args[5:])
-                    # response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count,message.author.name)
-                    # await send_channel.send(embed = response)
-                else:
-                    await send_channel.send(embed = discord.Embed(description='No command given.\n'+helpmsg))
+                search_terms = " ".join(args[5:])
+                response = await findLonelyPuzzles(puzzle_type, search_terms,max_age,solved_count,message.author.name)
+                await send_channel.send(embed = response)
             else:
                 await send_channel.send(embed = discord.Embed(description='Insufficient arguments given.\n'+helpmsg))
 
