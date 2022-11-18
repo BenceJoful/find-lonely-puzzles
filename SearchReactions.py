@@ -469,7 +469,7 @@ async def on_message(message):
                     response = await findLonelyPuzzles(puzzle_type, ' '.join(search_terms),max_age,solved_count,"updating pins")
                     await msg.edit(embed = response)
             return
-        elif (message.author.id in (developer_id,calling_bot_id) and len(args)==2 and args[1]=="lonelypuzzles"):
+        elif (message.author.id in (developer_id,calling_bot_id) and args[1]=="lonelypuzzles"):
             helpmsg = "Format message like: ```@PuzzleDigestBot lonelypuzzles puzzle_type max_age solved_count search terms```\npuzzle_type is 'sudoku', 'word', or 'other'  \nmax_age and solved_count must be integers.  \nSearch terms are optional, and not in quotes."
 
             if len(args) > 4:
