@@ -86,7 +86,7 @@ class ConfirmButtonView(discord.ui.View):
                     await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2022!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
 
             except StopIteration:
-                await interaction.response.send_message("Couldn't find you form submission.  If you submitted a sign-up form, please contact @BenceJoful#8715")
+                await interaction.response.send_message("Couldn't find you form submission.  If you submitted a sign-up form, please contact @BenceJoful#8715",ephemeral=True)
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
 
