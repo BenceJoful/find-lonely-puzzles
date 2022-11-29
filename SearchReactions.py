@@ -78,14 +78,14 @@ class ConfirmButtonView(discord.ui.View):
                     enable_cross_partition_query=True
                 ).next()
                 if "confirmed" in santaRecord and santaRecord["confirmed"] == 1:
-                    await interaction.response.send_message('You are already confirmed!  Please wait while we randomize and send you more details on your giftee.')
+                    await interaction.response.send_message('You are already confirmed!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
                 else:
                     santaRecord["confirmed"]=1
                     db_items("Santas2022").upsert_item(santaRecord)
-                    await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2022!  Please wait while we randomize and send you more details on your giftee.')
+                    await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2022!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
 
             except StopIteration:
-                await interaction.response.send_message("Couldn't find you form submission.  Please fill in and submit the questionaire to enroll, then click this button again to confirm.  If you have any trouble, please contact @BenceJoful#8715")
+                await interaction.response.send_message("Couldn't find you form submission.  Please fill in and submit the questionaire to enroll, then click this button again to confirm.  If you have any trouble, please contact @BenceJoful#8715",ephemeral=True)
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
 
@@ -157,6 +157,7 @@ class SignUpFormModal(discord.ui.Modal, title='Sign Up for Secret Puzzle Santa 2
             puzzlemessage = {
                     "id" : str(interaction.user.id),
                     "username": interaction.user.name,
+                    "discriminator": interaction.user.discriminator,
                     "signup_realname": self.form_realName.value,
                     "signup_about_you": self.form_aboutYou.value,
                     "signup_puzzles_enjoyed": self.form_puzzlesEnjoyed.value,
