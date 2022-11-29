@@ -63,6 +63,32 @@ class SignUpButtonView(discord.ui.View):
         #await interaction.response.send_message('Show the modal feedback screen.', ephemeral=True)
         await interaction.response.send_modal(SignUpFormModal())
 
+class ConfirmButtonView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label='I have read and agree to the above', style=discord.ButtonStyle.green, custom_id='persistent_view:ConfirmButton')
+    async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            #look up their submission in the database.
+            #if they exist, upsert to confirm them.  If not, send them a message.
+            try:
+                santaRecord = db_items("Santas2022").query_items(
+                    query='select * from c where c.id = "'+str(interaction.user.id)+'"',
+                    enable_cross_partition_query=True
+                ).next()
+                if "confirmed" in santaRecord and santaRecord["confirmed"] == 1:
+                    await interaction.response.send_message('You are already confirmed!  Please wait while we randomize and send you more details on your giftee.')
+                else:
+                    santaRecord["confirmed"]=1
+                    db_items("Santas2022").upsert_item(santaRecord)
+                    await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2022!  Please wait while we randomize and send you more details on your giftee.')
+
+            except StopIteration:
+                await interaction.response.send_message("Couldn't find you form submission.  Please fill in and submit the questionaire to enroll, then click this button again to confirm.  If you have any trouble, please contact @BenceJoful#8715")
+        except:
+            await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
+
 async def message_Bence(text, embed = None):
     await bot.get_user(developer_id).send(text, embed=embed)
 
@@ -163,6 +189,7 @@ class SantaBot(commands.Bot):
     async def setup_hook(self) -> None:
         #register the views for listening
         self.add_view(SignUpButtonView())
+        self.add_view(ConfirmButtonView())
 
     async def on_ready(self):
         guild = bot.get_guild(int(guild_id))
@@ -190,6 +217,8 @@ async def SendMessages(ctx: commands.Context):
                 
                 if message['is_SignUpButton_message'] == 1:
                     await user.send(message['text'], view=SignUpButtonView())
+                elif 'is_ConfirmButton_message' in message and message['is_ConfirmButton_message'] == 1:
+                    await user.send(message['text'], view=ConfirmButtonView())
                 elif message['is_SubmitGiftButton_message'] == 1:
                     await user.send(message['text'])
                     #await user.send(message['text'], view=SubmitGiftButtonView())
