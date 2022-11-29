@@ -61,7 +61,8 @@ class SignUpButtonView(discord.ui.View):
     @discord.ui.button(label='Sign Up for Secret Santa', style=discord.ButtonStyle.green, custom_id='persistent_view:SignUpButton')
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
         #await interaction.response.send_message('Show the modal feedback screen.', ephemeral=True)
-        await interaction.response.send_modal(SignUpFormModal())
+        #await interaction.response.send_modal(SignUpFormModal())
+        await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2022 are closed.  See you next year!")
 
 class ConfirmButtonView(discord.ui.View):
     def __init__(self):
@@ -85,7 +86,7 @@ class ConfirmButtonView(discord.ui.View):
                     await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2022!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
 
             except StopIteration:
-                await interaction.response.send_message("Couldn't find you form submission.  Please fill in and submit the questionaire to enroll, then click this button again to confirm.  If you have any trouble, please contact @BenceJoful#8715",ephemeral=True)
+                await interaction.response.send_message("Couldn't find you form submission.  If you submitted a sign-up form, please contact @BenceJoful#8715")
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
 
