@@ -8,6 +8,9 @@ import datetime
 import traceback
 import os
 import configparser
+import requests
+import shutil
+import json
 
 from azure.cosmos import CosmosClient
 from discord.ext.commands import CommandNotFound
@@ -31,6 +34,7 @@ try:
     sql_uri = os.environ['SQL_URI']
     sql_key = os.environ['SQL_KEY']
     server_mod_id = int(os.environ['SERVER_MOD_ID'])
+    tmp_folder = os.environ['TMP_FOLDER']
 
 except:
     config = configparser.ConfigParser()
@@ -53,6 +57,7 @@ except:
     sql_uri = config['db']['SQL_URI']
     sql_key = config['db']['SQL_KEY']
     server_mod_id = int(config['db']['SERVER_MOD_ID'])
+    tmp_folder = config['db']['TMP_FOLDER']
 
 class SignUpButtonView(discord.ui.View):
     def __init__(self):
@@ -89,6 +94,85 @@ class ConfirmButtonView(discord.ui.View):
                 await interaction.response.send_message("Couldn't find you form submission.  If you submitted a sign-up form, please contact @BenceJoful#8715",ephemeral=True)
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
+
+class SubmitGiftButtonView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label='Submit your gift', style=discord.ButtonStyle.green, custom_id='persistent_view:SubmitButton')
+    async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.send_message('Finding and saving your most recent message as the gift submission...', ephemeral=True)
+            user = interaction.user         
+            dm_channel = user.dm_channel
+            if (dm_channel is None):
+                dm_channel = await user.create_dm()
+            message = None
+            async for msg in dm_channel.history(limit=None): #just get the first one.
+                if msg.author.id == user.id:
+                    message = msg
+                    break
+
+            if message != None:
+
+                gift_message = message.content
+                gift_files = []
+                for attachment in message.attachments:
+                    gift_files.append({'url': attachment.url, 'filename': attachment.filename})
+
+                santaRecord = db_items("Santas2022").query_items(
+                    query='select * from c where c.id = "'+str(interaction.user.id)+'"',
+                    enable_cross_partition_query=True
+                ).next()
+                successmsg = ""
+                if "giftJSON" in santaRecord:
+                    successmsg = "OK, I have updated your gift message."
+                else:
+                    successmsg = "OK, I have saved your gift message."
+
+                santaRecord["giftJSON"]=json.dumps([gift_message, gift_files])
+                db_items("Santas2022").upsert_item(santaRecord)
+                
+                await user.send(successmsg+' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""\n')
+                await sendGiftMessage(santaRecord,interaction.user)
+                await user.send('\n"""""""""""""""""""""""""""""""""""""\n\nIf this looks good to you, you are done!  If you want to submit a new version, just write a new message then click the button above again to save the new one.')
+
+            else:
+                await user.send('First you need to send me a message.  Then hit the button, and I will save it.')
+
+        except:
+            await message_Bence('Error in processing submit gift button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
+
+def download_image(url, path):
+    r = requests.get(url, stream=True)
+    if r.status_code != 200:
+        raise Exception(f'Download failed with status code {r.status_code}')
+    with open(path, 'wb') as f:
+        r.raw.decode_content = True
+        shutil.copyfileobj(r.raw, f)
+
+async def sendGiftMessage(santaRecord, santeeUser):
+    try:
+        if "giftJSON" in santaRecord:
+            [gift_message, gift_files] = json.loads(santaRecord["giftJSON"])
+
+            local_files = []
+            if not os.path.exists(tmp_folder):
+                os.mkdir(tmp_folder)
+            for i, file in enumerate(gift_files):
+                path = f'{tmp_folder}/{i}'
+                if os.path.exists(path):
+                    os.remove(path)
+                download_image(file['url'], path)
+                local_files.append(discord.File(path, filename=file['filename']))
+            await santeeUser.send(gift_message,files=local_files)
+            for i in range(len(gift_files)):
+                os.remove(f'{tmp_folder}/{i}')
+        else:
+            await message_Bence('Error: No giftJSON in santa Record '+str(santaRecord["id"]))
+
+    except:
+        await message_Bence('Error in processing submit gift button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
 
 async def message_Bence(text, embed = None):
     await bot.get_user(developer_id).send(text, embed=embed)
@@ -192,6 +276,7 @@ class SantaBot(commands.Bot):
         #register the views for listening
         self.add_view(SignUpButtonView())
         self.add_view(ConfirmButtonView())
+        self.add_view(SubmitGiftButtonView())
 
     async def on_ready(self):
         guild = bot.get_guild(int(guild_id))
@@ -217,15 +302,35 @@ async def SendMessages(ctx: commands.Context):
             try:
                 user = guild.get_member_named(message['username']) #BenceJoful#8715
                 
+                view = None
                 if message['is_SignUpButton_message'] == 1:
-                    await user.send(message['text'], view=SignUpButtonView())
+                    view=SignUpButtonView()
                 elif 'is_ConfirmButton_message' in message and message['is_ConfirmButton_message'] == 1:
-                    await user.send(message['text'], view=ConfirmButtonView())
+                    view=ConfirmButtonView()
                 elif message['is_SubmitGiftButton_message'] == 1:
-                    await user.send(message['text'])
-                    #await user.send(message['text'], view=SubmitGiftButtonView())
-                else:
-                    await user.send(message['text'])
+                    view=SubmitGiftButtonView()
+
+                embed = None
+                if 'embed' in message:
+                    embed = discord.Embed(description=message['embed_description'])
+
+                files = []
+                if 'attachments' in message:
+                    attachments = json.loads(message['attachments'])
+                    local_files = []
+                    if not os.path.exists(tmp_folder):
+                        os.mkdir(tmp_folder)
+                    for i, file in enumerate(attachments):
+                        path = f'{tmp_folder}/{i}'
+                        if os.path.exists(path):
+                            os.remove(path)
+                        download_image(file['url'], path)
+                        local_files.append(discord.File(path, filename=file['filename']))
+                    await user.send(message['text'], files=local_files)
+                    for i in range(len(attachments)):
+                        os.remove(f'{tmp_folder}/{i}')
+
+                await user.send(message['text'], files=files, embed=embed, view=view)
 
                 message["message_sent"] = 1
                 db_items("Messages").upsert_item(body=message)
