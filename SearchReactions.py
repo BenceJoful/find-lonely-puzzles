@@ -141,14 +141,38 @@ class SubmitGiftButtonView(discord.ui.View):
                 santaRecord["giftJSON"]=json.dumps([gift_message, gift_files])
                 db_items("Santas2022").upsert_item(santaRecord)
                 
+                #Send a version back to the Santa so they can see what it'll look like later.
                 await user.send(successmsg+' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""')
                 await sendGiftMessage(santaRecord,user)
                 await user.send('"""""""""""""""""""""""""""""""""""""\nIf this looks good to you, you are done!  If you want to submit a new version, just write a new message then click the button above again to save the new one.')
 
-                secret_keeper_user = bot.get_user(secret_keeper_id)
-                await secret_keeper_user.send(secret_successmsg+'\n"""""""""""""""""""""""""""""""""""""')
-                await sendGiftMessage(santaRecord,secret_keeper_user)
-                await secret_keeper_user.send('"""""""""""""""""""""""""""""""""""""')
+                #Send a version to the Secret Keeper so they can peek :)
+                secretKeeperUser = bot.get_user(secret_keeper_id)
+                secretKeeperDMChannel = secretKeeperUser.dm_channel
+                if (secretKeeperDMChannel is None):
+                    secretKeeperDMChannel = await secretKeeperUser.create_dm()
+                from_date = datetime.datetime(2022,12,1)
+                foundMessage = False
+
+                santaRecord = {"username":'BenceJoful', "discriminator":"8715"}
+                santeeRecord = {"username":'Philip Newman', "discriminator":"4154"}
+
+                #But first, cancel the previous version.
+                async for msg in secretKeeperDMChannel.history(after=from_date,limit=None):
+                    #if not (msg.content.startswith("~~") and msg.content.endswith("~~")) and \
+                    if  f"{santaRecord['username']+'#'+santaRecord['discriminator']} has " in msg.content and \
+                        f"gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:" in msg.content:
+                        foundMessage = True
+                        await msg.edit(content="~~"+msg.content+"~~")
+                        continue
+
+                    if foundMessage:
+                        await msg.edit(content="~~"+msg.content+"~~")
+                        foundMessage = False                
+
+                #Now send the new message
+                await secretKeeperUser.send(secret_successmsg+'\n"""""""""""""""""""""""""""""""""""""')
+                await sendGiftMessage(santaRecord,secretKeeperUser)
 
             else:
                 await user.send('First you need to send me a message.  Then hit the button, and I will save it.')
