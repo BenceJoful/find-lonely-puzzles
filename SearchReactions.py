@@ -154,9 +154,6 @@ class SubmitGiftButtonView(discord.ui.View):
                 from_date = datetime.datetime(2022,12,1)
                 foundMessage = False
 
-                santaRecord = {"username":'BenceJoful', "discriminator":"8715"}
-                santeeRecord = {"username":'Philip Newman', "discriminator":"4154"}
-
                 #But first, cancel the previous version.
                 async for msg in secretKeeperDMChannel.history(after=from_date,limit=None):
                     #if not (msg.content.startswith("~~") and msg.content.endswith("~~")) and \
