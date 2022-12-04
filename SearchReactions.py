@@ -35,6 +35,7 @@ try:
     sql_key = os.environ['SQL_KEY']
     server_mod_id = int(os.environ['SERVER_MOD_ID'])
     tmp_folder = os.environ['TMP_FOLDER']
+    secret_keeper_id = int(os.environ['SECRET_KEEPER_ID'])
 
 except:
     config = configparser.ConfigParser()
@@ -58,6 +59,7 @@ except:
     sql_key = config['db']['SQL_KEY']
     server_mod_id = int(config['db']['SERVER_MOD_ID'])
     tmp_folder = config['db']['TMP_FOLDER']
+    secret_keeper_id = int(config['db']['SECRET_KEEPER_ID'])
 
 class SignUpButtonView(discord.ui.View):
     def __init__(self):
@@ -124,18 +126,29 @@ class SubmitGiftButtonView(discord.ui.View):
                     query='select * from c where c.id = "'+str(interaction.user.id)+'"',
                     enable_cross_partition_query=True
                 ).next()
+                santeeRecord = db_items("Santas2022").query_items(
+                    query='select * from c where c.id = "'+santaRecord["santee_id"]+'"',
+                    enable_cross_partition_query=True
+                ).next()
                 successmsg = ""
                 if "giftJSON" in santaRecord:
                     successmsg = "OK, I have updated your gift message."
+                    secret_successmsg = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has resubmitted a new version of the gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:"
                 else:
                     successmsg = "OK, I have saved your gift message."
+                    secret_successmsg = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has submitted a gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:"
 
                 santaRecord["giftJSON"]=json.dumps([gift_message, gift_files])
                 db_items("Santas2022").upsert_item(santaRecord)
                 
-                await user.send(successmsg+' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""\n')
-                await sendGiftMessage(santaRecord,interaction.user)
-                await user.send('\n"""""""""""""""""""""""""""""""""""""\n\nIf this looks good to you, you are done!  If you want to submit a new version, just write a new message then click the button above again to save the new one.')
+                await user.send(successmsg+' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""')
+                await sendGiftMessage(santaRecord,user)
+                await user.send('"""""""""""""""""""""""""""""""""""""\nIf this looks good to you, you are done!  If you want to submit a new version, just write a new message then click the button above again to save the new one.')
+
+                secret_keeper_user = bot.get_user(secret_keeper_id)
+                await secret_keeper_user.send(secret_successmsg+'\n"""""""""""""""""""""""""""""""""""""')
+                await sendGiftMessage(santaRecord,secret_keeper_user)
+                await secret_keeper_user.send('"""""""""""""""""""""""""""""""""""""')
 
             else:
                 await user.send('First you need to send me a message.  Then hit the button, and I will save it.')
@@ -151,7 +164,7 @@ def download_image(url, path):
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
-async def sendGiftMessage(santaRecord, santeeUser):
+async def sendGiftMessage(santaRecord, toUser):
     try:
         if "giftJSON" in santaRecord:
             [gift_message, gift_files] = json.loads(santaRecord["giftJSON"])
@@ -165,7 +178,7 @@ async def sendGiftMessage(santaRecord, santeeUser):
                     os.remove(path)
                 download_image(file['url'], path)
                 local_files.append(discord.File(path, filename=file['filename']))
-            await santeeUser.send(gift_message,files=local_files)
+            await toUser.send(gift_message,files=local_files)
             for i in range(len(gift_files)):
                 os.remove(f'{tmp_folder}/{i}')
         else:
@@ -311,7 +324,7 @@ async def SendMessages(ctx: commands.Context):
                     view=SubmitGiftButtonView()
 
                 embed = None
-                if 'embed' in message:
+                if 'embed_description' in message:
                     embed = discord.Embed(description=message['embed_description'])
 
                 files = []
