@@ -1,7 +1,6 @@
 from dis import dis
 from discord.ext import commands
 import discord
-from discord import app_commands
 import interactions
 import datetime
 
@@ -103,6 +102,25 @@ class SubmitGiftButtonView(discord.ui.View):
 
     @discord.ui.button(label='Submit your gift', style=discord.ButtonStyle.green, custom_id='persistent_view:SubmitButton')
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await ClickSubmitGiftButton(interaction, "giftJSON", ' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""', '')
+
+class SubmitBackupGiftButtonView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label='Submit Backup gift A', style=discord.ButtonStyle.green, custom_id='persistent_view:BackupASubmitButton')
+    async def greenA(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await ClickSubmitGiftButton(interaction, "giftJSON_backup_A", ' It is Backup A. Bence and punchingcatto can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
+
+    @discord.ui.button(label='Submit Backup gift B', style=discord.ButtonStyle.green, custom_id='persistent_view:BackupBSubmitButton')
+    async def greenB(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await ClickSubmitGiftButton(interaction, "giftJSON_backup_B", ' It is Backup B. Bence and punchingcatto can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
+
+    @discord.ui.button(label='Submit Backup gift C', style=discord.ButtonStyle.green, custom_id='persistent_view:BackupCSubmitButton')
+    async def greenC(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await ClickSubmitGiftButton(interaction, "giftJSON_backup_C", ' It is Backup C. Bence and punchingcatto can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
+
+async def ClickSubmitGiftButton(interaction, dbField, nextStepMessage):
         try:
             await interaction.response.send_message('Finding and saving your most recent message as the gift submission...', ephemeral=True)
             user = interaction.user         
@@ -131,19 +149,25 @@ class SubmitGiftButtonView(discord.ui.View):
                     enable_cross_partition_query=True
                 ).next()
                 successmsg = ""
-                if "giftJSON" in santaRecord:
+                if dbField in santaRecord:
                     successmsg = "OK, I have updated your gift message."
-                    secret_successmsg = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has resubmitted a new version of the gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:"
+                    if "_backup_" in dbField:
+                        secret_successmsg = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has resubmitted a new version of the gift for {dbField}:"
+                    else:
+                        secret_successmsg = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has resubmitted a new version of the gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:"
                 else:
                     successmsg = "OK, I have saved your gift message."
-                    secret_successmsg = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has submitted a gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:"
+                    if "_backup_" in dbField:
+                        secret_successmsg = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has submitted a gift for {dbField}:"
+                    else:
+                        secret_successmsg = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has submitted a gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:"
 
-                santaRecord["giftJSON"]=json.dumps([gift_message, gift_files])
+                santaRecord[dbField]=json.dumps([gift_message, gift_files])
                 db_items("Santas2022").upsert_item(santaRecord)
                 
                 #Send a version back to the Santa so they can see what it'll look like later.
-                await user.send(successmsg+' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""')
-                await sendGiftMessage(santaRecord,user)
+                await user.send(successmsg+nextStepMessage)
+                await sendGiftMessage(santaRecord,user,dbField)
                 await user.send('"""""""""""""""""""""""""""""""""""""\nIf this looks good to you, you are done!  If you want to submit a new version, just write a new message then click the button above again to save the new one.')
 
                 #Send a version to the Secret Keeper so they can peek :)
@@ -155,10 +179,16 @@ class SubmitGiftButtonView(discord.ui.View):
                 foundMessage = False
 
                 #But first, cancel the previous version.
+                   
+                message_match_start = f"{santaRecord['username']+'#'+santaRecord['discriminator']} has "
+                message_match_end = f"gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:"
+                if "_backup_" in dbField:
+                    message_match_end = f"gift for {dbField}:"
+
                 async for msg in secretKeeperDMChannel.history(after=from_date,limit=None):
                     #if not (msg.content.startswith("~~") and msg.content.endswith("~~")) and \
-                    if  f"{santaRecord['username']+'#'+santaRecord['discriminator']} has " in msg.content and \
-                        f"gift for {santeeRecord['username']+'#'+santeeRecord['discriminator']}:" in msg.content:
+                    if  message_match_start in msg.content and \
+                        message_match_end in msg.content:
                         foundMessage = True
                         await msg.edit(content="~~"+msg.content+"~~")
                         continue
@@ -169,7 +199,7 @@ class SubmitGiftButtonView(discord.ui.View):
 
                 #Now send the new message
                 await secretKeeperUser.send(secret_successmsg+'\n"""""""""""""""""""""""""""""""""""""')
-                await sendGiftMessage(santaRecord,secretKeeperUser)
+                await sendGiftMessage(santaRecord,secretKeeperUser,dbField)
 
             else:
                 await user.send('First you need to send me a message.  Then hit the button, and I will save it.')
@@ -185,10 +215,10 @@ def download_image(url, path):
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
-async def sendGiftMessage(santaRecord, toUser):
+async def sendGiftMessage(santaRecord, toUser, dbField):
     try:
-        if "giftJSON" in santaRecord:
-            [gift_message, gift_files] = json.loads(santaRecord["giftJSON"])
+        if dbField in santaRecord:
+            [gift_message, gift_files] = json.loads(santaRecord[dbField])
 
             local_files = []
             if not os.path.exists(tmp_folder):
@@ -203,7 +233,7 @@ async def sendGiftMessage(santaRecord, toUser):
             for i in range(len(gift_files)):
                 os.remove(f'{tmp_folder}/{i}')
         else:
-            await message_Bence('Error: No giftJSON in santa Record '+str(santaRecord["id"]))
+            await message_Bence('Error: No "'+dbField+'" in santa Record '+str(santaRecord["id"]))
 
     except:
         await message_Bence('Error in processing submit gift button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
@@ -311,6 +341,7 @@ class SantaBot(commands.Bot):
         self.add_view(SignUpButtonView())
         self.add_view(ConfirmButtonView())
         self.add_view(SubmitGiftButtonView())
+        self.add_view(SubmitBackupGiftButtonView())
 
     async def on_ready(self):
         guild = bot.get_guild(int(guild_id))
