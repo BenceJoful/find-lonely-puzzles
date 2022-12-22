@@ -102,7 +102,7 @@ class SubmitGiftButtonView(discord.ui.View):
 
     @discord.ui.button(label='Submit your gift', style=discord.ButtonStyle.green, custom_id='persistent_view:SubmitButton')
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await ClickSubmitGiftButton(interaction, "giftJSON", ' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""', '')
+        await ClickSubmitGiftButton(interaction, "giftJSON", ' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""')
 
 class SubmitBackupGiftButtonView(discord.ui.View):
     def __init__(self):
@@ -391,7 +391,6 @@ async def SendMessages(ctx: commands.Context):
                             os.remove(path)
                         download_image(file['url'], path)
                         local_files.append(discord.File(path, filename=file['filename']))
-                    await user.send(message['text'], files=local_files)
                     for i in range(len(attachments)):
                         os.remove(f'{tmp_folder}/{i}')
 
