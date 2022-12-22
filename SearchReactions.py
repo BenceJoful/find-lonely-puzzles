@@ -390,8 +390,6 @@ async def SendMessages(ctx: commands.Context):
                             os.remove(path)
                         download_image(file['url'], path)
                         local_files.append(discord.File(path, filename=file['filename']))
-                    for i in range(len(attachments)):
-                        os.remove(f'{tmp_folder}/{i}')
 
                 await user.send(message['text'], files=local_files, embed=embed, view=view)
 
