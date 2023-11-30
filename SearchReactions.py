@@ -68,7 +68,7 @@ class ShowInterestButtonView(discord.ui.View):
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             #Send them a direct message with the sign up form.
-            await interaction.user.send("Hello!\nYou are receiving this message because you expressed interest in joining the CTC Community Secret Puzzle Santa 2022!\nIf you are still interested, please click below to sign up.\nBy submitting this form, you officially enter the CTC Community Secret puzzle Santa, and agree to adhering to all the rules and deadlines of the event.\nSome of these questions are optional, however the more information you give your Santa, the better they can personalize your gift!", view=SignUpButtonView())
+            await interaction.user.send("Hello!\nYou are receiving this message because you expressed interest in joining the CTC Community Secret Puzzle Santa 2022!\nTo complete your sign-up, please click below and submit the form.\nBy doing so, you officially enter the CTC Community Secret puzzle Santa, and agree to adhering to all the rules and deadlines of the event.\nSome of these questions are optional, however the more information you give your Santa, the better they can personalize your gift!", view=SignUpButtonView())
             await interaction.response.send_message("Glad to have you aboard! You should now see a DM from me (Puzzle Digest Bot) containing the sign-up form. If you don't see this, please DM BenceJoful or PunchingCatto immediately. Thanks!",ephemeral=True)
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
