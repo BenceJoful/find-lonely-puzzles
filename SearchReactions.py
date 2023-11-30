@@ -379,10 +379,9 @@ async def SendMessages(ctx: commands.Context):
                 if 'embed_description' in message:
                     embed = discord.Embed(description=message['embed_description'])
 
-                files = []
+                local_files = []
                 if 'attachments' in message:
                     attachments = json.loads(message['attachments'])
-                    local_files = []
                     if not os.path.exists(tmp_folder):
                         os.mkdir(tmp_folder)
                     for i, file in enumerate(attachments):
@@ -391,10 +390,11 @@ async def SendMessages(ctx: commands.Context):
                             os.remove(path)
                         download_image(file['url'], path)
                         local_files.append(discord.File(path, filename=file['filename']))
-                    for i in range(len(attachments)):
-                        os.remove(f'{tmp_folder}/{i}')
 
-                await user.send(message['text'], files=files, embed=embed, view=view)
+                await user.send(message['text'], files=local_files, embed=embed, view=view)
+
+                for i in range(len(local_files)):
+                    os.remove(f'{tmp_folder}/{i}')
 
                 message["message_sent"] = 1
                 db_items("Messages").upsert_item(body=message)
