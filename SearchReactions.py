@@ -105,7 +105,7 @@ class ConfirmButtonView(discord.ui.View):
                     await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2022!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
 
             except StopIteration:
-                await interaction.response.send_message("Couldn't find you form submission.  If you submitted a sign-up form, please contact @BenceJoful#8715",ephemeral=True)
+                await interaction.response.send_message("Couldn't find you form submission.  If you submitted a sign-up form, please contact BenceJoful",ephemeral=True)
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
 
@@ -313,7 +313,7 @@ class SignUpFormModal(discord.ui.Modal, title='Sign Up for Secret Puzzle Santa 2
                 f"\n\nAnything Else: {self.form_anythingElse.value}")
 
             #send back to user for verification
-            await interaction.response.send_message("OK, you are all signed up!  \nHere's the information I received. If you need to change any of it, feel free to hit the Sign Up button and fill in the whole form again - we'll only use the newest entry.  \n\nIf you need to cancel for any reason, please contact @punchingcatto#9553 as soon as possible. \n\nLooking forward to it!", embed=embed)
+            await interaction.response.send_message("OK, you are all signed up!  \nHere's the information I received. If you need to change any of it, feel free to hit the Sign Up button and fill in the whole form again - we'll only use the newest entry.  \n\nIf you need to cancel for any reason, please contact PunchingCatto as soon as possible. \n\nLooking forward to it!", embed=embed)
 
             #save in database
             puzzlemessage = {
