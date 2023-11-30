@@ -68,7 +68,7 @@ class ShowInterestButtonView(discord.ui.View):
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             #Send them a direct message with the sign up form.
-            await interaction.user.send("Hello!\nYou are receiving this message because you expressed interest in joining the CTC Community Secret Puzzle Santa 2022!\nTo complete your sign-up, please click below and submit the form.\nBy doing so, you officially enter the CTC Community Secret puzzle Santa, and agree to adhering to all the rules and deadlines of the event.\nSome of these questions are optional, however the more information you give your Santa, the better they can personalize your gift!", view=SignUpButtonView())
+            await interaction.user.send("Hello!\nYou are receiving this message because you expressed interest in joining the CTC Community Secret Puzzle Santa 2023!\nTo complete your sign-up, please click below and submit the form.\nBy doing so, you officially enter the CTC Community Secret puzzle Santa, and agree to adhering to all the rules and deadlines of the event.\nSome of these questions are optional, however the more information you give your Santa, the better they can personalize your gift!", view=SignUpButtonView())
             await interaction.response.send_message("Glad to have you aboard! You should now see a DM from me (Puzzle Digest Bot) containing the sign-up form. If you don't see this, please DM BenceJoful or PunchingCatto immediately. Thanks!",ephemeral=True)
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
@@ -81,7 +81,7 @@ class SignUpButtonView(discord.ui.View):
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
         #await interaction.response.send_message('Show the modal feedback screen.', ephemeral=True)
         await interaction.response.send_modal(SignUpFormModal())
-        #await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2022 are closed.  See you next year!")
+        #await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2023 are closed.  See you next year!")
 
 class ConfirmButtonView(discord.ui.View):
     def __init__(self):
@@ -102,7 +102,7 @@ class ConfirmButtonView(discord.ui.View):
                 else:
                     santaRecord["confirmed"]=1
                     db_items("Santas2023").upsert_item(santaRecord)
-                    await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2022!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
+                    await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2023!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
 
             except StopIteration:
                 await interaction.response.send_message("Couldn't find you form submission.  If you submitted a sign-up form, please contact BenceJoful",ephemeral=True)
@@ -188,7 +188,7 @@ async def ClickSubmitGiftButton(interaction, dbField, nextStepMessage):
                 secretKeeperDMChannel = secretKeeperUser.dm_channel
                 if (secretKeeperDMChannel is None):
                     secretKeeperDMChannel = await secretKeeperUser.create_dm()
-                from_date = datetime.datetime(2022,12,1)
+                from_date = datetime.datetime(2023,12,1)
                 foundMessage = False
 
                 #But first, cancel the previous version.
@@ -262,7 +262,7 @@ def db_items(container_name):
         _dbcontainers[container_name] = database.get_container_client(container_name)
     return _dbcontainers[container_name]
 
-class SignUpFormModal(discord.ui.Modal, title='Sign Up for Secret Puzzle Santa 2022'):
+class SignUpFormModal(discord.ui.Modal, title='Sign Up for Secret Puzzle Santa 2023'):
 
     form_realName = discord.ui.TextInput(
         label='Real Name (Optional)',
