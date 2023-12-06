@@ -68,8 +68,10 @@ class ShowInterestButtonView(discord.ui.View):
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             #Send them a direct message with the sign up form.
-            await interaction.user.send("Hello!\nYou are receiving this message because you expressed interest in joining the CTC Community Secret Puzzle Santa 2023!\nTo complete your sign-up, please click below and submit the form.\nBy doing so, you officially enter the CTC Community Secret puzzle Santa, and agree to adhering to all the rules and deadlines of the event.\nSome of these questions are optional, however the more information you give your Santa, the better they can personalize your gift!", view=SignUpButtonView())
-            await interaction.response.send_message("Glad to have you aboard! You should now see a DM from me (Puzzle Digest Bot) containing the sign-up form. If you don't see this, please DM BenceJoful or punchingcatto immediately. Thanks!",ephemeral=True)
+            # await interaction.user.send("Hello!\nYou are receiving this message because you expressed interest in joining the CTC Community Secret Puzzle Santa 2023!\nTo complete your sign-up, please click below and submit the form.\nBy doing so, you officially enter the CTC Community Secret puzzle Santa, and agree to adhering to all the rules and deadlines of the event.\nSome of these questions are optional, however the more information you give your Santa, the better they can personalize your gift!", view=SignUpButtonView())
+            # await interaction.response.send_message("Glad to have you aboard! You should now see a DM from me (Puzzle Digest Bot) containing the sign-up form. If you don't see this, please DM BenceJoful or punchingcatto immediately. Thanks!",ephemeral=True)
+            await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2023 are closed.  See you next year!", ephemeral=True)
+            
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
 
@@ -79,9 +81,8 @@ class SignUpButtonView(discord.ui.View):
 
     @discord.ui.button(label='Sign Up for Secret Santa', style=discord.ButtonStyle.green, custom_id='persistent_view:SignUpButton')
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
-        #await interaction.response.send_message('Show the modal feedback screen.', ephemeral=True)
-        await interaction.response.send_modal(SignUpFormModal())
-        #await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2023 are closed.  See you next year!")
+        # await interaction.response.send_modal(SignUpFormModal())
+        await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2023 are closed.  See you next year!", ephemeral=True)
 
 class ConfirmButtonView(discord.ui.View):
     def __init__(self):
