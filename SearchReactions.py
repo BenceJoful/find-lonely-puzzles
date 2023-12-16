@@ -116,7 +116,7 @@ class SubmitGiftButtonView(discord.ui.View):
 
     @discord.ui.button(label='Submit your gift', style=discord.ButtonStyle.green, custom_id='persistent_view:SubmitButton')
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await ClickSubmitGiftButton(interaction, "giftJSON", ' It will be sent to your Santee on December 22, and look just like this:\n"""""""""""""""""""""""""""""""""""""')
+        await ClickSubmitGiftButton(interaction, "giftJSON", ' It will be sent to your Santee on December 23, and look just like this:\n"""""""""""""""""""""""""""""""""""""')
 
 class SubmitBackupGiftButtonView(discord.ui.View):
     def __init__(self):
