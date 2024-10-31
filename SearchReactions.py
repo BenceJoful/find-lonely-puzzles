@@ -68,9 +68,9 @@ class ShowInterestButtonView(discord.ui.View):
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             #Send them a direct message with the sign up form.
-            # await interaction.user.send("Hello!\nYou are receiving this message because you expressed interest in joining the CTC Community Secret Puzzle Santa 2023!\nTo complete your sign-up, please click below and submit the form.\nBy doing so, you officially enter the CTC Community Secret puzzle Santa, and agree to adhering to all the rules and deadlines of the event.\nSome of these questions are optional, however the more information you give your Santa, the better they can personalize your gift!", view=SignUpButtonView())
-            # await interaction.response.send_message("Glad to have you aboard! You should now see a DM from me (Puzzle Digest Bot) containing the sign-up form. If you don't see this, please DM BenceJoful or punchingcatto immediately. Thanks!",ephemeral=True)
-            await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2023 are closed.  See you next year!", ephemeral=True)
+            await interaction.user.send("Hello!\nYou are receiving this message because you expressed interest in joining the CTC Community Secret Puzzle Santa 2024!\nTo complete your sign-up, please click below and submit the form.\nBy doing so, you officially enter the CTC Community Secret puzzle Santa, and agree to adhering to all the rules and deadlines of the event.\nSome of these questions are optional, however the more information you give your Santa, the better they can personalize your gift!", view=SignUpButtonView())
+            await interaction.response.send_message("Glad to have you aboard! You should now see a DM from me (Puzzle Digest Bot) containing the sign-up form. If you don't see this, please DM BenceJoful or wesselstrijkstra immediately. Thanks!",ephemeral=True)
+            #await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2024 are closed.  See you next year!", ephemeral=True)
             
         except:
             await message_Bence('Error in processing confirm button click', embed=discord.Embed(description=traceback.format_exc()[-4000:]))
@@ -81,8 +81,8 @@ class SignUpButtonView(discord.ui.View):
 
     @discord.ui.button(label='Sign Up for Secret Santa', style=discord.ButtonStyle.green, custom_id='persistent_view:SignUpButton')
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # await interaction.response.send_modal(SignUpFormModal())
-        await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2023 are closed.  See you next year!", ephemeral=True)
+        await interaction.response.send_modal(SignUpFormModal())
+        # await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2024 are closed.  See you next year!", ephemeral=True)
 
 class ConfirmButtonView(discord.ui.View):
     def __init__(self):
@@ -94,7 +94,7 @@ class ConfirmButtonView(discord.ui.View):
             #look up their submission in the database.
             #if they exist, upsert to confirm them.  If not, send them a message.
             try:
-                santaRecord = db_items("Santas2023").query_items(
+                santaRecord = db_items("Santas2024").query_items(
                     query='select * from c where c.id = "'+str(interaction.user.id)+'"',
                     enable_cross_partition_query=True
                 ).next()
@@ -102,8 +102,8 @@ class ConfirmButtonView(discord.ui.View):
                     await interaction.response.send_message('You are already confirmed!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
                 else:
                     santaRecord["confirmed"]=1
-                    db_items("Santas2023").upsert_item(santaRecord)
-                    await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2023!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
+                    db_items("Santas2024").upsert_item(santaRecord)
+                    await interaction.response.send_message('You are confirmed for participation in the Secret Puzzle Santa 2024!  Please wait while we randomize and send you more details on your giftee.',ephemeral=True)
 
             except StopIteration:
                 await interaction.response.send_message("Couldn't find you form submission.  If you submitted a sign-up form, please contact BenceJoful",ephemeral=True)
@@ -124,15 +124,15 @@ class SubmitBackupGiftButtonView(discord.ui.View):
 
     @discord.ui.button(label='Submit Backup gift A', style=discord.ButtonStyle.green, custom_id='persistent_view:BackupASubmitButton')
     async def greenA(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await ClickSubmitGiftButton(interaction, "giftJSON_backup_A", ' It is Backup A. Bence and punchingcatto can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
+        await ClickSubmitGiftButton(interaction, "giftJSON_backup_A", ' It is Backup A. Bence and wesselstrijkstra can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
 
     @discord.ui.button(label='Submit Backup gift B', style=discord.ButtonStyle.green, custom_id='persistent_view:BackupBSubmitButton')
     async def greenB(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await ClickSubmitGiftButton(interaction, "giftJSON_backup_B", ' It is Backup B. Bence and punchingcatto can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
+        await ClickSubmitGiftButton(interaction, "giftJSON_backup_B", ' It is Backup B. Bence and wesselstrijkstra can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
 
     @discord.ui.button(label='Submit Backup gift C', style=discord.ButtonStyle.green, custom_id='persistent_view:BackupCSubmitButton')
     async def greenC(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await ClickSubmitGiftButton(interaction, "giftJSON_backup_C", ' It is Backup C. Bence and punchingcatto can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
+        await ClickSubmitGiftButton(interaction, "giftJSON_backup_C", ' It is Backup C. Bence and wesselstrijkstra can take it from here.  Here is what it will look like:\n"""""""""""""""""""""""""""""""""""""\n')
 
 async def ClickSubmitGiftButton(interaction, dbField, nextStepMessage):
         try:
@@ -154,11 +154,11 @@ async def ClickSubmitGiftButton(interaction, dbField, nextStepMessage):
                 for attachment in message.attachments:
                     gift_files.append({'url': attachment.url, 'filename': attachment.filename})
 
-                santaRecord = db_items("Santas2023").query_items(
+                santaRecord = db_items("Santas2024").query_items(
                     query='select * from c where c.id = "'+str(interaction.user.id)+'"',
                     enable_cross_partition_query=True
                 ).next()
-                santeeRecord = db_items("Santas2023").query_items(
+                santeeRecord = db_items("Santas2024").query_items(
                     query='select * from c where c.id = "'+santaRecord["santee_id"]+'"',
                     enable_cross_partition_query=True
                 ).next()
@@ -177,7 +177,7 @@ async def ClickSubmitGiftButton(interaction, dbField, nextStepMessage):
                         secret_successmsg = f"{santaRecord['username']} has submitted a gift for {santeeRecord['username']}:"
 
                 santaRecord[dbField]=json.dumps([gift_message, gift_files])
-                db_items("Santas2023").upsert_item(santaRecord)
+                db_items("Santas2024").upsert_item(santaRecord)
                 
                 #Send a version back to the Santa so they can see what it'll look like later.
                 await user.send(successmsg+nextStepMessage)
@@ -189,7 +189,7 @@ async def ClickSubmitGiftButton(interaction, dbField, nextStepMessage):
                 secretKeeperDMChannel = secretKeeperUser.dm_channel
                 if (secretKeeperDMChannel is None):
                     secretKeeperDMChannel = await secretKeeperUser.create_dm()
-                from_date = datetime.datetime(2023,12,1)
+                from_date = datetime.datetime(2024,11,1)
                 foundMessage = False
 
                 #But first, cancel the previous version.
@@ -263,7 +263,7 @@ def db_items(container_name):
         _dbcontainers[container_name] = database.get_container_client(container_name)
     return _dbcontainers[container_name]
 
-class SignUpFormModal(discord.ui.Modal, title='Sign Up for Secret Puzzle Santa 2023'):
+class SignUpFormModal(discord.ui.Modal, title='Sign Up for Secret Puzzle Santa 2024'):
 
     form_realName = discord.ui.TextInput(
         label='Real Name (Optional)',
@@ -314,7 +314,7 @@ class SignUpFormModal(discord.ui.Modal, title='Sign Up for Secret Puzzle Santa 2
                 f"\n\nAnything Else: {self.form_anythingElse.value}")
 
             #send back to user for verification
-            await interaction.response.send_message("OK, you are all signed up!  \nHere's the information I received. If you need to change any of it, feel free to hit the Sign Up button and fill in the whole form again - we'll only use the newest entry.  \n\nIf you need to cancel for any reason, please contact punchingcatto as soon as possible. \n\nLooking forward to it!", embed=embed)
+            await interaction.response.send_message("OK, you are all signed up!  \nHere's the information I received. If you need to change any of it, feel free to hit the Sign Up button and fill in the whole form again - we'll only use the newest entry.  \n\nIf you need to cancel for any reason, please contact wesselstrijkstra as soon as possible. \n\nLooking forward to it!", embed=embed)
 
             #save in database
             puzzlemessage = {
@@ -326,7 +326,7 @@ class SignUpFormModal(discord.ui.Modal, title='Sign Up for Secret Puzzle Santa 2
                     "signup_favorite_puzzle_types": self.form_favoritePuzzleTypes.value,
                     "signup_anything_else": self.form_anythingElse.value,
                 }
-            db_items("Santas2023").upsert_item(body=puzzlemessage)
+            db_items("Santas2024").upsert_item(body=puzzlemessage)
 
             #send to BenceJoful as backup
             await message_Bence('Sign up by '+str(interaction.user.id), embed=discord.Embed(description=str(puzzlemessage)))
