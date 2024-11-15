@@ -81,8 +81,8 @@ class SignUpButtonView(discord.ui.View):
 
     @discord.ui.button(label='Sign Up for Secret Santa', style=discord.ButtonStyle.green, custom_id='persistent_view:SignUpButton')
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(SignUpFormModal())
-        # await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2024 are closed.  See you next year!", ephemeral=True)
+        #await interaction.response.send_modal(SignUpFormModal())
+        await interaction.response.send_message("Sign-ups for Secret Puzzle Santa 2024 are closed.  See you next year!", ephemeral=True)
 
 class ConfirmButtonView(discord.ui.View):
     def __init__(self):
