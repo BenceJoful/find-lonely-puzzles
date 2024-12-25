@@ -11,6 +11,7 @@ import requests
 import shutil
 import json
 
+
 from azure.cosmos import CosmosClient
 from discord.ext.commands import CommandNotFound
 
