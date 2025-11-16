@@ -36,6 +36,7 @@ try:
     server_mod_id = int(os.environ['SERVER_MOD_ID'])
     tmp_folder = os.environ['TMP_FOLDER']
     secret_keeper_id = int(os.environ['SECRET_KEEPER_ID'])
+    secret_santa_channel_id = int(os.environ["SECRET_SANTA_CHANNEL_ID"])
 
 except:
     config = configparser.ConfigParser()
@@ -60,6 +61,7 @@ except:
     server_mod_id = int(config['db']['SERVER_MOD_ID'])
     tmp_folder = config['db']['TMP_FOLDER']
     secret_keeper_id = int(config['db']['SECRET_KEEPER_ID'])
+    secret_santa_channel_id = int(config['db']["SECRET_SANTA_CHANNEL_ID"])
 
 class ShowInterestButtonView(discord.ui.View):
     def __init__(self):
@@ -710,5 +712,13 @@ async def on_message(message):
                 await send_channel.send(embed = response)
             else:
                 await send_channel.send(embed = discord.Embed(description='Insufficient arguments given.\n'+helpmsg))
+
+@bot.command()
+@commands.is_owner()
+async def PostShowInterestButtonView(ctx: commands.Context):
+    guild = bot.get_guild(int(guild_id))
+    channel = guild.get_channel(secret_santa_channel_id)
+
+    await channel.send("", view=ShowInterestButtonView())
 
 bot.run(access_token)
