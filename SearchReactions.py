@@ -423,6 +423,42 @@ async def SendMessages(ctx: commands.Context):
     except:
         await message_Bence('Error getting messages ', embed=discord.Embed(description=traceback.format_exc()))
 
+@bot.command()
+@commands.is_owner()
+async def GiveSantaRoles(ctx: commands.Context):
+    #download all santas from the database, boil down to IDs.
+    #get all users with the santa role.
+    #for each user in the role:
+    #   if it isn't in the database, remove the role.  
+    #   if it's in the database, remove from the database and continue.
+    #for each user in the database list, add role.
+    
+    SantaIDList = []
+    for item in db_items("Santas2025").query_items(
+        query="select c.id from c order by c.id",
+        enable_cross_partition_query=True
+    ):
+        SantaIDList.append(str(item['id']))
+
+    guild = bot.get_guild(int(guild_id))
+    #role = guild.get_role(1044785335504207924)#Test Server
+    role = guild.get_role(1179687329691091046)#CTC Community
+    for user in role.members:
+        if str(user.id) in SantaIDList:
+            #already has the role, we're good now.
+            #SantaIDList.remove(str(user.id))
+            pass
+        else:
+            #not signed up, remove role
+            await user.remove_roles(role)
+            #pass
+    for id in SantaIDList:
+        user = guild.get_member(int(id))
+        if user:
+            await user.add_roles(role)
+        else:
+            await message_Bence("Couldn't get member "+id+" to add role "+role.name)
+
 @bot.hybrid_command(
     name="lonelypuzzles", description="Search for puzzles which need testing", 
     options=[
