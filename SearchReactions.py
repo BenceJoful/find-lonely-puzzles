@@ -446,8 +446,8 @@ async def GiveSantaRoles(ctx: commands.Context):
     for user in role.members:
         if str(user.id) in SantaIDList:
             #already has the role, we're good now.
-            #SantaIDList.remove(str(user.id))
-            pass
+            SantaIDList.remove(str(user.id))
+            #pass
         else:
             #not signed up, remove role
             await user.remove_roles(role)
