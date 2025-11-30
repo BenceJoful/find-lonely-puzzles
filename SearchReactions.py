@@ -169,15 +169,15 @@ async def ClickSubmitGiftButton(interaction, dbField, nextStepMessage):
                 if dbField in santaRecord:
                     successmsg = "OK, I have updated your gift message."
                     if "_backup_" in dbField:
-                        secret_successmsg = f"{santaRecord['username']} has resubmitted a new version of the gift for {dbField}:"
+                        secret_successmsg = f"{santaRecord['username']} has resubmitted a new version of the gift:"# for {dbField}:"
                     else:
-                        secret_successmsg = f"{santaRecord['username']} has resubmitted a new version of the gift for {santeeRecord['username']}:"
+                        secret_successmsg = f"{santaRecord['username']} has resubmitted a new version of the gift:"# for {santeeRecord['username']}:"
                 else:
                     successmsg = "OK, I have saved your gift message."
                     if "_backup_" in dbField:
-                        secret_successmsg = f"{santaRecord['username']} has submitted a gift for {dbField}:"
+                        secret_successmsg = f"{santaRecord['username']} has submitted a gift:"# for {dbField}:"
                     else:
-                        secret_successmsg = f"{santaRecord['username']} has submitted a gift for {santeeRecord['username']}:"
+                        secret_successmsg = f"{santaRecord['username']} has submitted a gift:"# for {santeeRecord['username']}:"
 
                 santaRecord[dbField]=json.dumps([gift_message, gift_files])
                 db_items("Santas2025").upsert_item(santaRecord)
@@ -198,9 +198,9 @@ async def ClickSubmitGiftButton(interaction, dbField, nextStepMessage):
                 #But first, cancel the previous version.
                    
                 message_match_start = f"{santaRecord['username']} has "
-                message_match_end = f"gift for {santeeRecord['username']}:"
+                message_match_end = f"gift:"# for {santeeRecord['username']}:"
                 if "_backup_" in dbField:
-                    message_match_end = f"gift for {dbField}:"
+                    message_match_end = f"gift:"# for {dbField}:"
 
                 async for msg in secretKeeperDMChannel.history(after=from_date,limit=None):
                     #if not (msg.content.startswith("~~") and msg.content.endswith("~~")) and \
